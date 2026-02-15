@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Dumbbell icon for MuscleTracker -->
+    <!-- Left weight plate -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M28,38 L28,70 L34,70 L34,38 Z"/>
+    <!-- Left small plate -->
+    <path
+        android:fillColor="#DDDDDD"
+        android:pathData="M22,42 L22,66 L28,66 L28,42 Z"/>
+    <!-- Bar -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M34,50 L74,50 L74,58 L34,58 Z"/>
+    <!-- Right weight plate -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M74,38 L74,70 L80,70 L80,38 Z"/>
+    <!-- Right small plate -->
+    <path
+        android:fillColor="#DDDDDD"
+        android:pathData="M80,42 L80,66 L86,66 L86,42 Z"/>
+</vector>
