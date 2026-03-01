@@ -20,7 +20,7 @@ import kotlinx.coroutines.launch
         Goal::class,
         UserProfile::class, WeightEntry::class, CardioSession::class
     ],
-    version = 7,
+    version = 8,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -421,6 +421,53 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // 1. Move forearm exercises to "Avant-bras" muscle group
+                db.execSQL("UPDATE exercises SET muscleGroup = 'Avant-bras' WHERE name IN ('Curl poignet', 'Reverse curl poignet', 'Farmer walk', 'Curl inverse')")
+
+                // 2. Add new forearm exercises
+                val forearmExercises = listOf(
+                    "Wrist roller" to "isolation",
+                    "Flexion poignet barre" to "isolation",
+                    "Extension poignet barre" to "isolation",
+                    "Pince / Gripper" to "isolation"
+                )
+                forearmExercises.forEach { (name, type) ->
+                    db.execSQL(
+                        """INSERT INTO exercises (name, muscleGroup, isCustom, targetSets, targetRepsMin, targetRepsMax, restSeconds, exerciseType, dayType, isActive, isFavorite)
+                           SELECT ?, 'Avant-bras', 0, 3, 10, 15, 60, ?, '', 1, 0
+                           WHERE NOT EXISTS (SELECT 1 FROM exercises WHERE name = ?)""",
+                        arrayOf(name, type, name)
+                    )
+                }
+
+                // 3. Replace "Cable crossover" with "Pec deck / Butterfly" in Chest+Back templates
+                // (Cable crossover = Ecarte poulie are too similar)
+                db.execSQL("""
+                    UPDATE template_exercises SET exerciseId = (SELECT id FROM exercises WHERE name = 'Pec deck / Butterfly' LIMIT 1)
+                    WHERE exerciseId = (SELECT id FROM exercises WHERE name = 'Cable crossover' LIMIT 1)
+                    AND templateId IN (SELECT id FROM workout_templates WHERE name = 'Chest + Back')
+                """)
+
+                // 4. Add forearm exercise to Arms + Shoulders (Tuesday)
+                db.execSQL("""
+                    INSERT INTO template_exercises (templateId, exerciseId, sortOrder, targetSets, targetRepsMin, targetRepsMax)
+                    SELECT t.id, e.id, 7, 3, 10, 15
+                    FROM workout_templates t, exercises e
+                    WHERE t.name = 'Arms + Shoulders' AND t.dayOfWeek = 3 AND e.name = 'Curl poignet'
+                """)
+
+                // 5. Add forearm exercise to Shoulders + Arms (Friday)
+                db.execSQL("""
+                    INSERT INTO template_exercises (templateId, exerciseId, sortOrder, targetSets, targetRepsMin, targetRepsMax)
+                    SELECT t.id, e.id, 7, 3, 10, 15
+                    FROM workout_templates t, exercises e
+                    WHERE t.name = 'Shoulders + Arms' AND t.dayOfWeek = 6 AND e.name = 'Reverse curl poignet'
+                """)
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 Room.databaseBuilder(
@@ -429,7 +476,7 @@ abstract class AppDatabase : RoomDatabase() {
                     "muscle_tracker_db"
                 )
                     .addCallback(DatabaseCallback())
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
                     .build()
                     .also { INSTANCE = it }
             }

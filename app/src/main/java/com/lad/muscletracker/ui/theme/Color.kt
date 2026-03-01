@@ -11,6 +11,7 @@ val Green500 = Color(0xFF10B981)
 val Red500 = Color(0xFFEF4444)
 val Orange500 = Color(0xFFF59E0B)
 val Purple500 = Color(0xFFA855F7)
+val Teal500 = Color(0xFF14B8A6)
 
 val DarkBg = Color(0xFF0F0F1A)
 val DarkSurface = Color(0xFF1A1A2E)

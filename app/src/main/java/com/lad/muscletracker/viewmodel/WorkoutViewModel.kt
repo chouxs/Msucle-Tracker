@@ -26,6 +26,7 @@ object VolumeLandmarks {
         "Dos" to Landmarks(8, 14, 20),
         "Epaules" to Landmarks(6, 12, 18),
         "Bras" to Landmarks(4, 10, 16),
+        "Avant-bras" to Landmarks(2, 6, 12),
         "Jambes" to Landmarks(6, 12, 20),
         "Abdos" to Landmarks(0, 8, 16)
     )
@@ -400,11 +401,26 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
                     warmups[te.exerciseId] = "${light}kg x12"
                 }
             } else {
-                // No previous data - guide user
-                hints[te.exerciseId] = if (te.exerciseType == "compound")
-                    "1ere fois: commence barre a vide (20kg) et monte progressivement"
-                else
-                    "1ere fois: commence leger, vise ${te.targetRepsMin}-${te.targetRepsMax} reps"
+                // No previous data - guide user based on exercise name
+                val name = te.exerciseName.lowercase()
+                val isBarbell = name.contains("barre") || name.contains("squat barre") ||
+                    name.contains("developpe couche barre") || name.contains("militaire") ||
+                    name.contains("souleve de terre")
+                val isDumbbell = name.contains("haltere") || name.contains("goblet") || name.contains("arnold")
+                val isMachine = name.contains("machine") || name.contains("presse") ||
+                    name.contains("poulie") || name.contains("cable") || name.contains("smith") ||
+                    name.contains("hack") || name.contains("leg ext") || name.contains("leg curl") ||
+                    name.contains("pec deck") || name.contains("butterfly")
+                val isBodyweight = name.contains("traction") || name.contains("dips") || name.contains("pompe")
+
+                hints[te.exerciseId] = when {
+                    isBarbell -> "1ere fois: commence barre a vide (20kg) et monte progressivement"
+                    isDumbbell -> "1ere fois: commence avec des halteres legers (5-8kg)"
+                    isMachine -> "1ere fois: commence avec la charge minimale de la machine"
+                    isBodyweight -> "1ere fois: commence au poids de corps, vise ${te.targetRepsMin} reps"
+                    te.exerciseType == "compound" -> "1ere fois: commence leger et monte progressivement"
+                    else -> "1ere fois: commence leger, vise ${te.targetRepsMin}-${te.targetRepsMax} reps"
+                }
             }
         }
         _progressionHints.value = hints

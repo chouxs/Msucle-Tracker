@@ -91,7 +91,7 @@ object SeedData {
         Exercise(name = "Curl concentre", muscleGroup = "Bras", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
         Exercise(name = "Curl barre EZ", muscleGroup = "Bras", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
         Exercise(name = "Curl cable", muscleGroup = "Bras", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
-        Exercise(name = "Curl inverse", muscleGroup = "Bras", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
+        Exercise(name = "Curl inverse", muscleGroup = "Avant-bras", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 60, exerciseType = "isolation"),
         Exercise(name = "Curl spider", muscleGroup = "Bras", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
         Exercise(name = "Curl 21s", muscleGroup = "Bras", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
 
@@ -104,10 +104,14 @@ object SeedData {
         Exercise(name = "Developpe couche prise serree", muscleGroup = "Bras", targetSets = 4, targetRepsMin = 6, targetRepsMax = 10, restSeconds = 120, exerciseType = "compound"),
         Exercise(name = "Extension triceps haltere", muscleGroup = "Bras", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
 
-        // === EXTRA BRAS - Avant-bras ===
-        Exercise(name = "Curl poignet", muscleGroup = "Bras", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
-        Exercise(name = "Reverse curl poignet", muscleGroup = "Bras", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
-        Exercise(name = "Farmer walk", muscleGroup = "Bras", targetSets = 4, targetRepsMin = 6, targetRepsMax = 10, restSeconds = 120, exerciseType = "compound"),
+        // === AVANT-BRAS ===
+        Exercise(name = "Curl poignet", muscleGroup = "Avant-bras", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 60, exerciseType = "isolation"),
+        Exercise(name = "Reverse curl poignet", muscleGroup = "Avant-bras", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 60, exerciseType = "isolation"),
+        Exercise(name = "Farmer walk", muscleGroup = "Avant-bras", targetSets = 3, targetRepsMin = 6, targetRepsMax = 10, restSeconds = 90, exerciseType = "compound"),
+        Exercise(name = "Wrist roller", muscleGroup = "Avant-bras", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 60, exerciseType = "isolation"),
+        Exercise(name = "Flexion poignet barre", muscleGroup = "Avant-bras", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 60, exerciseType = "isolation"),
+        Exercise(name = "Extension poignet barre", muscleGroup = "Avant-bras", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 60, exerciseType = "isolation"),
+        Exercise(name = "Pince / Gripper", muscleGroup = "Avant-bras", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 60, exerciseType = "isolation"),
 
         // === EXTRA JAMBES - Quadriceps ===
         Exercise(name = "Hack squat", muscleGroup = "Jambes", targetSets = 4, targetRepsMin = 6, targetRepsMax = 10, restSeconds = 120, exerciseType = "compound"),
@@ -160,12 +164,13 @@ object SeedData {
     private val templateExerciseMap = mapOf(
         "Chest + Back" to listOf(
             "Developpe couche barre", "Developpe incline halteres", "Ecarte poulie",
-            "Cable crossover", "Traction pronation", "Rowing barre",
+            "Pec deck / Butterfly", "Traction pronation", "Rowing barre",
             "Tirage horizontal cable", "Souleve de terre classique"
         ),
         "Arms + Shoulders" to listOf(
             "Developpe militaire", "Elevations laterales", "Face pull",
-            "Curl biceps barre", "Curl marteau", "Extension triceps poulie", "Barre au front"
+            "Curl biceps barre", "Curl marteau", "Extension triceps poulie", "Barre au front",
+            "Curl poignet"
         ),
         "Legs" to listOf(
             "Squat barre", "Presse a cuisses", "Souleve de terre roumain",
@@ -173,7 +178,8 @@ object SeedData {
         ),
         "Shoulders + Arms" to listOf(
             "Arnold press", "Elevation laterale cable", "Oiseau / Reverse fly",
-            "Curl incline halteres", "Curl pupitre", "Extension triceps corde", "Dips triceps"
+            "Curl incline halteres", "Curl pupitre", "Extension triceps corde", "Dips triceps",
+            "Reverse curl poignet"
         ),
         "Full Body" to listOf(
             "Developpe couche halteres", "Traction pronation", "Squat goblet",

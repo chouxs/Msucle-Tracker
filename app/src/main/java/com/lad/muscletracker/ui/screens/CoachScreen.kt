@@ -136,6 +136,7 @@ fun CoachScreen(
                                 "Jambes" -> Green500
                                 "Epaules" -> Orange500
                                 "Bras" -> Purple500
+                                "Avant-bras" -> Teal500
                                 "Abdos" -> Blue400
                                 else -> TextSecondary
                             }
@@ -280,6 +281,7 @@ private fun CoachExerciseCard(target: CoachExerciseTarget) {
         "Jambes" -> Green500
         "Epaules" -> Orange500
         "Bras" -> Purple500
+        "Avant-bras" -> Teal500
         "Abdos" -> Blue400
         else -> TextSecondary
     }

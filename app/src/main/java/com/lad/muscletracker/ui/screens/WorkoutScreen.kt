@@ -60,8 +60,8 @@ fun WorkoutScreen(
     var showFinishConfirmation by remember { mutableStateOf(false) }
 
     val openExerciseDemo: (String) -> Unit = { name ->
-        val query = URLEncoder.encode("$name musculation forme", "UTF-8")
-        uriHandler.openUri("https://www.youtube.com/results?search_query=$query")
+        val query = URLEncoder.encode("$name musculation exercice mouvement", "UTF-8")
+        uriHandler.openUri("https://www.google.com/search?q=$query&tbm=isch")
     }
 
     BackHandler { showFinishConfirmation = true }
@@ -496,6 +496,7 @@ private fun TemplateExerciseCard(
         "Jambes" -> Green500
         "Epaules" -> Orange500
         "Bras" -> Purple500
+        "Avant-bras" -> Teal500
         "Abdos" -> Blue400
         else -> TextSecondary
     }
@@ -540,7 +541,7 @@ private fun TemplateExerciseCard(
                     modifier = Modifier.size(32.dp)
                 ) {
                     Icon(
-                        Icons.Default.PlayCircle,
+                        Icons.Default.Image,
                         contentDescription = "Voir le mouvement",
                         tint = Blue400,
                         modifier = Modifier.size(20.dp)
@@ -647,6 +648,7 @@ private fun FreeExerciseCard(
         "Jambes" -> Green500
         "Epaules" -> Orange500
         "Bras" -> Purple500
+        "Avant-bras" -> Teal500
         "Abdos" -> Blue400
         else -> TextSecondary
     }
@@ -681,7 +683,7 @@ private fun FreeExerciseCard(
                     modifier = Modifier.size(32.dp)
                 ) {
                     Icon(
-                        Icons.Default.PlayCircle,
+                        Icons.Default.Image,
                         contentDescription = "Voir le mouvement",
                         tint = Blue400,
                         modifier = Modifier.size(20.dp)
@@ -717,6 +719,7 @@ private fun FavoriteExerciseCard(
         "Jambes" -> Green500
         "Epaules" -> Orange500
         "Bras" -> Purple500
+        "Avant-bras" -> Teal500
         "Abdos" -> Blue400
         else -> TextSecondary
     }

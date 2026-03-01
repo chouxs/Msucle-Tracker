@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
@@ -31,6 +32,7 @@ fun ExerciseCard(
         "Jambes" -> Green500
         "Epaules" -> Orange500
         "Bras" -> Purple500
+        "Avant-bras" -> Teal500
         "Abdos" -> Blue400
         else -> TextSecondary
     }
@@ -104,7 +106,7 @@ fun ExerciseCard(
                     modifier = Modifier.size(36.dp)
                 ) {
                     Icon(
-                        Icons.Default.PlayCircle,
+                        Icons.Default.Image,
                         contentDescription = "Voir le mouvement",
                         tint = Blue400,
                         modifier = Modifier.size(20.dp)

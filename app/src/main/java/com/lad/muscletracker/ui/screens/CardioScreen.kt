@@ -40,7 +40,7 @@ fun CardioScreen(
     var editingSession by remember { mutableStateOf<CardioSession?>(null) }
 
     var selectedType by remember { mutableStateOf("walk") }
-    var speedText by remember { mutableStateOf("") }
+    var distanceText by remember { mutableStateOf("") }
     var durationText by remember { mutableStateOf("") }
     var inclineText by remember { mutableStateOf("") }
 
@@ -48,7 +48,7 @@ fun CardioScreen(
     LaunchedEffect(editingSession) {
         editingSession?.let { session ->
             selectedType = session.type
-            speedText = "%.1f".format(session.avgSpeedKmh)
+            distanceText = "%.2f".format(session.distanceKm)
             durationText = session.durationMinutes.toString()
             inclineText = if (session.inclinePercent > 0) "%.1f".format(session.inclinePercent) else ""
         }
@@ -56,13 +56,35 @@ fun CardioScreen(
 
     val dateFormat = remember { SimpleDateFormat("dd/MM HH:mm", Locale.FRANCE) }
 
-    val liveCalories by remember(selectedType, speedText, durationText, inclineText, userWeightKg) {
+    val liveSpeed by remember(distanceText, durationText) {
         derivedStateOf {
-            val speed = speedText.replace(",", ".").toFloatOrNull() ?: 0f
+            val distance = distanceText.replace(",", ".").toFloatOrNull() ?: 0f
+            val duration = durationText.toIntOrNull() ?: 0
+            if (duration > 0 && distance > 0f) distance / (duration / 60f) else 0f
+        }
+    }
+
+    val livePace by remember(distanceText, durationText) {
+        derivedStateOf {
+            val distance = distanceText.replace(",", ".").toFloatOrNull() ?: 0f
+            val duration = durationText.toIntOrNull() ?: 0
+            if (distance > 0f && duration > 0) {
+                val paceMin = duration / distance
+                val mins = paceMin.toInt()
+                val secs = ((paceMin - mins) * 60).toInt()
+                "${mins}'${String.format("%02d", secs)}\"/km"
+            } else ""
+        }
+    }
+
+    val liveCalories by remember(selectedType, distanceText, durationText, inclineText, userWeightKg) {
+        derivedStateOf {
+            val distance = distanceText.replace(",", ".").toFloatOrNull() ?: 0f
             val duration = durationText.toIntOrNull() ?: 0
             val incline = inclineText.replace(",", ".").toFloatOrNull() ?: 0f
+            val speed = if (duration > 0) distance / (duration / 60f) else 0f
 
-            if (duration <= 0 || speed <= 0f) {
+            if (duration <= 0 || distance <= 0f) {
                 0
             } else {
                 val met = if (selectedType == "walk") {
@@ -80,14 +102,6 @@ fun CardioScreen(
                 }
                 ((met * userWeightKg * duration * 3.5f) / 200f).toInt()
             }
-        }
-    }
-
-    val liveDistance by remember(speedText, durationText) {
-        derivedStateOf {
-            val speed = speedText.replace(",", ".").toFloatOrNull() ?: 0f
-            val duration = durationText.toIntOrNull() ?: 0
-            speed * (duration / 60f)
         }
     }
 
@@ -167,7 +181,7 @@ fun CardioScreen(
                         TextButton(onClick = {
                             editingSession = null
                             selectedType = "walk"
-                            speedText = ""
+                            distanceText = ""
                             durationText = ""
                             inclineText = ""
                         }) {
@@ -206,11 +220,11 @@ fun CardioScreen(
 
                 Spacer(Modifier.height(12.dp))
 
-                // Speed
+                // Distance
                 OutlinedTextField(
-                    value = speedText,
-                    onValueChange = { speedText = it },
-                    label = { Text("Vitesse (km/h)", color = TextMuted) },
+                    value = distanceText,
+                    onValueChange = { distanceText = it },
+                    label = { Text("Distance (km)", color = TextMuted) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -255,24 +269,28 @@ fun CardioScreen(
 
                 Spacer(Modifier.height(12.dp))
 
-                // Live preview: distance + calories
-                if (liveCalories > 0 || liveDistance > 0f) {
+                // Live preview: speed, pace, calories
+                if (liveCalories > 0 || liveSpeed > 0f) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
-                        if (liveDistance > 0f) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.Straighten, null, tint = Green500, modifier = Modifier.size(18.dp))
-                                Spacer(Modifier.width(4.dp))
-                                Text("%.2f km".format(liveDistance), color = Green500, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        if (liveSpeed > 0f) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text("%.1f km/h".format(liveSpeed), color = Blue400, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                Text("Vitesse", color = TextMuted, fontSize = 10.sp)
+                            }
+                        }
+                        if (livePace.isNotEmpty()) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(livePace, color = Green500, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                Text("Allure", color = TextMuted, fontSize = 10.sp)
                             }
                         }
                         if (liveCalories > 0) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.LocalFireDepartment, null, tint = Orange500, modifier = Modifier.size(18.dp))
-                                Spacer(Modifier.width(4.dp))
-                                Text("~$liveCalories kcal", color = Orange500, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text("~$liveCalories", color = Orange500, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                Text("kcal", color = TextMuted, fontSize = 10.sp)
                             }
                         }
                     }
@@ -282,10 +300,11 @@ fun CardioScreen(
                 // Save/Update button
                 Button(
                     onClick = {
-                        val speed = speedText.replace(",", ".").toFloatOrNull() ?: 0f
+                        val distance = distanceText.replace(",", ".").toFloatOrNull() ?: 0f
                         val duration = durationText.toIntOrNull() ?: 0
                         val incline = inclineText.replace(",", ".").toFloatOrNull() ?: 0f
-                        if (speed > 0f && duration > 0) {
+                        if (distance > 0f && duration > 0) {
+                            val speed = distance / (duration / 60f)
                             val editing = editingSession
                             if (editing != null) {
                                 onUpdateSession(editing, speed, duration, incline)
@@ -293,7 +312,7 @@ fun CardioScreen(
                             } else {
                                 onAddSession(selectedType, speed, duration, incline)
                             }
-                            speedText = ""
+                            distanceText = ""
                             durationText = ""
                             inclineText = ""
                         }
@@ -352,17 +371,28 @@ fun CardioScreen(
 
                         Spacer(Modifier.height(8.dp))
 
+                        val sessionPace = if (session.distanceKm > 0f) {
+                            val paceMin = session.durationMinutes / session.distanceKm
+                            val mins = paceMin.toInt()
+                            val secs = ((paceMin - mins) * 60).toInt()
+                            "${mins}'${String.format("%02d", secs)}\""
+                        } else ""
+
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceEvenly
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("%.1f km".format(session.distanceKm), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                                Text("%.2f km".format(session.distanceKm), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
                                 Text("Distance", fontSize = 11.sp, color = TextMuted)
                             }
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text("${session.durationMinutes} min", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
                                 Text("Duree", fontSize = 11.sp, color = TextMuted)
+                            }
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(sessionPace, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                                Text("Allure/km", fontSize = 11.sp, color = TextMuted)
                             }
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text("%.1f km/h".format(session.avgSpeedKmh), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
