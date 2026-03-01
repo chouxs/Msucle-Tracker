@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lad.muscletracker.data.dao.SetWithExerciseName
@@ -24,6 +25,7 @@ import com.lad.muscletracker.data.entity.Exercise
 import com.lad.muscletracker.ui.components.RestTimer
 import com.lad.muscletracker.ui.components.SetRow
 import com.lad.muscletracker.ui.theme.*
+import java.net.URLEncoder
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,6 +49,7 @@ fun WorkoutScreen(
     onFinish: () -> Unit,
     onBack: () -> Unit
 ) {
+    val uriHandler = LocalUriHandler.current
     var showExercisePicker by remember { mutableStateOf(false) }
     var selectedExercise by remember { mutableStateOf<Exercise?>(null) }
     var weightText by remember { mutableStateOf("") }
@@ -55,6 +58,11 @@ fun WorkoutScreen(
     var selectedSetType by remember { mutableStateOf("working") }
     var exerciseSearchQuery by remember { mutableStateOf("") }
     var showFinishConfirmation by remember { mutableStateOf(false) }
+
+    val openExerciseDemo: (String) -> Unit = { name ->
+        val query = URLEncoder.encode("$name musculation forme", "UTF-8")
+        uriHandler.openUri("https://www.youtube.com/results?search_query=$query")
+    }
 
     BackHandler { showFinishConfirmation = true }
 
@@ -153,7 +161,8 @@ fun WorkoutScreen(
                             }
                         },
                         onDeleteSet = onDeleteSet,
-                        onEditSet = onEditSet
+                        onEditSet = onEditSet,
+                        onShowDemo = { openExerciseDemo(templateEx.exerciseName) }
                     )
                 }
 
@@ -195,7 +204,8 @@ fun WorkoutScreen(
                             muscleGroup = muscleGroup,
                             sets = exerciseSets,
                             onDeleteSet = onDeleteSet,
-                            onEditSet = onEditSet
+                            onEditSet = onEditSet,
+                            onShowDemo = { openExerciseDemo(exerciseName) }
                         )
                     }
                 }
@@ -211,7 +221,8 @@ fun WorkoutScreen(
                             muscleGroup = muscleGroup,
                             sets = exerciseSets,
                             onDeleteSet = onDeleteSet,
-                            onEditSet = onEditSet
+                            onEditSet = onEditSet,
+                            onShowDemo = { openExerciseDemo(exerciseName) }
                         )
                     }
                 }
@@ -435,7 +446,8 @@ fun WorkoutScreen(
                                 selectedGroup = null
                                 exerciseSearchQuery = ""
                             },
-                            onToggleFavorite = { onToggleFavorite(it) }
+                            onToggleFavorite = { onToggleFavorite(it) },
+                            onShowDemo = { openExerciseDemo(it) }
                         )
                         Spacer(Modifier.height(4.dp))
                     }
@@ -475,7 +487,8 @@ private fun TemplateExerciseCard(
     warmupHint: String? = null,
     onSelectForAdd: () -> Unit,
     onDeleteSet: (Long) -> Unit,
-    onEditSet: (setId: Long, weight: Float, reps: Int) -> Unit
+    onEditSet: (setId: Long, weight: Float, reps: Int) -> Unit,
+    onShowDemo: () -> Unit = {}
 ) {
     val groupColor = when (templateExercise.muscleGroup) {
         "Pecs" -> Red500
@@ -522,6 +535,18 @@ private fun TemplateExerciseCard(
                         )
                     }
                 }
+                IconButton(
+                    onClick = onShowDemo,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        Icons.Default.PlayCircle,
+                        contentDescription = "Voir le mouvement",
+                        tint = Blue400,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                Spacer(Modifier.width(4.dp))
                 Text(
                     "$completedSets / ${templateExercise.targetSets}",
                     color = if (isDone) Green500 else TextSecondary,
@@ -613,7 +638,8 @@ private fun FreeExerciseCard(
     muscleGroup: String,
     sets: List<SetWithExerciseName>,
     onDeleteSet: (Long) -> Unit,
-    onEditSet: (setId: Long, weight: Float, reps: Int) -> Unit
+    onEditSet: (setId: Long, weight: Float, reps: Int) -> Unit,
+    onShowDemo: () -> Unit = {}
 ) {
     val groupColor = when (muscleGroup) {
         "Pecs" -> Red500
@@ -642,14 +668,25 @@ private fun FreeExerciseCard(
                     exerciseName,
                     color = TextPrimary,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp
+                    fontSize = 14.sp,
+                    modifier = Modifier.weight(1f)
                 )
-                Spacer(Modifier.width(6.dp))
                 Text(
                     muscleGroup,
                     color = groupColor,
                     fontSize = 10.sp
                 )
+                IconButton(
+                    onClick = onShowDemo,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        Icons.Default.PlayCircle,
+                        contentDescription = "Voir le mouvement",
+                        tint = Blue400,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
 
             Spacer(Modifier.height(8.dp))

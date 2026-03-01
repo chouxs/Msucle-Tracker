@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.*
@@ -21,7 +22,8 @@ fun ExerciseCard(
     exercise: Exercise,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    onToggleFavorite: ((Long) -> Unit)? = null
+    onToggleFavorite: ((Long) -> Unit)? = null,
+    onShowDemo: ((String) -> Unit)? = null
 ) {
     val groupColor = when (exercise.muscleGroup) {
         "Pecs" -> Red500
@@ -94,6 +96,20 @@ fun ExerciseCard(
                     color = TextMuted,
                     fontSize = 10.sp
                 )
+            }
+
+            if (onShowDemo != null) {
+                IconButton(
+                    onClick = { onShowDemo(exercise.name) },
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Icon(
+                        Icons.Default.PlayCircle,
+                        contentDescription = "Voir le mouvement",
+                        tint = Blue400,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
 
             if (onToggleFavorite != null) {
