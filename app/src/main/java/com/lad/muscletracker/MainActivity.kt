@@ -75,6 +75,7 @@ fun MainContent(viewModel: WorkoutViewModel = viewModel()) {
     val weeklyWorkoutCount by viewModel.weeklyWorkoutCount.collectAsStateWithLifecycle()
     val currentTemplateExercises by viewModel.currentTemplateExercises.collectAsStateWithLifecycle()
     val progressionHints by viewModel.progressionHints.collectAsStateWithLifecycle()
+    val warmupHints by viewModel.warmupHints.collectAsStateWithLifecycle()
     val weeklyVolume by viewModel.weeklyVolume.collectAsStateWithLifecycle()
     val coachTargets by viewModel.coachTargets.collectAsStateWithLifecycle()
     val personalRecords by viewModel.allPersonalRecords.collectAsStateWithLifecycle()
@@ -94,6 +95,7 @@ fun MainContent(viewModel: WorkoutViewModel = viewModel()) {
     val weeklyCardioDistance by viewModel.weeklyCardioDistance.collectAsStateWithLifecycle()
 
     val workoutStreak by viewModel.workoutStreak.collectAsStateWithLifecycle()
+    val injectedFavorites by viewModel.injectedFavorites.collectAsStateWithLifecycle()
 
     // Calendar
     val selectedMonth by viewModel.selectedMonth.collectAsStateWithLifecycle()
@@ -126,6 +128,7 @@ fun MainContent(viewModel: WorkoutViewModel = viewModel()) {
                 todayTemplates = todayTemplates,
                 allTemplates = allTemplates,
                 personalRecords = personalRecords,
+                weeklyVolume = weeklyVolume,
                 workoutStreak = workoutStreak,
                 onStartWorkoutFromTemplate = { template ->
                     if (!isStartingWorkout) {
@@ -163,12 +166,16 @@ fun MainContent(viewModel: WorkoutViewModel = viewModel()) {
                     restTimerSeconds = restTimerSeconds,
                     isRestTimerRunning = isRestTimerRunning,
                     progressionHints = progressionHints,
+                    warmupHints = warmupHints,
                     isEditing = isEditingWorkout,
                     workoutElapsedSeconds = workoutElapsedSeconds,
+                    injectedFavorites = injectedFavorites,
                     onAddSet = { exerciseId, weight, reps, setType ->
                         viewModel.addSet(exerciseId, weight, reps, setType)
                     },
                     onDeleteSet = { viewModel.deleteSet(it) },
+                    onEditSet = { setId, weight, reps -> viewModel.updateSet(setId, weight, reps) },
+                    onToggleFavorite = { viewModel.toggleFavorite(it) },
                     onStartTimer = { viewModel.startRestTimer(it) },
                     onStopTimer = { viewModel.stopRestTimer() },
                     onFinish = {
@@ -238,6 +245,7 @@ fun MainContent(viewModel: WorkoutViewModel = viewModel()) {
             SupplementsScreen(
                 supplementsWithReminders = supplementsWithReminders,
                 onAddSupplement = { name, dosage -> viewModel.addSupplement(name, dosage) },
+                onEditSupplement = { supplement, name, dosage -> viewModel.updateSupplement(supplement, name, dosage) },
                 onDeleteSupplement = { viewModel.deleteSupplement(it) },
                 onAddReminder = { supplementId, hour, minute, label ->
                     viewModel.addReminder(supplementId, hour, minute, label)
@@ -267,8 +275,11 @@ fun MainContent(viewModel: WorkoutViewModel = viewModel()) {
                 weeklyCalories = weeklyCardioCalories,
                 weeklyDistance = weeklyCardioDistance,
                 userWeightKg = userProfile?.weightKg ?: 70f,
-                onAddSession = { type, distance, duration, incline ->
-                    viewModel.addCardioSession(type, distance, duration, incline)
+                onAddSession = { type, speed, duration, incline ->
+                    viewModel.addCardioSession(type, speed, duration, incline)
+                },
+                onUpdateSession = { session, speed, duration, incline ->
+                    viewModel.updateCardioSession(session, speed, duration, incline)
                 },
                 onDeleteSession = { viewModel.deleteCardioSession(it) },
                 onBack = { currentScreen = Screen.HOME }
@@ -279,6 +290,8 @@ fun MainContent(viewModel: WorkoutViewModel = viewModel()) {
             CalendarScreen(
                 selectedMonth = selectedMonth,
                 monthWorkouts = monthWorkouts,
+                totalWorkouts = allWorkouts.count { it.isCompleted },
+                weeklyWorkoutCount = weeklyWorkoutCount,
                 onChangeMonth = { viewModel.changeMonth(it) },
                 onBack = { currentScreen = Screen.HOME }
             )

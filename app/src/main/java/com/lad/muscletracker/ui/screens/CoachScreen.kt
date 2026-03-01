@@ -1,5 +1,6 @@
 package com.lad.muscletracker.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -30,6 +31,7 @@ fun CoachScreen(
     personalRecords: List<PersonalRecord>,
     onBack: () -> Unit
 ) {
+    BackHandler { onBack() }
     var showCalculator by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -282,6 +284,12 @@ private fun CoachExerciseCard(target: CoachExerciseTarget) {
         else -> TextSecondary
     }
 
+    // Determine if user should increase weight (all sets at ceiling)
+    val isWeightIncrease = target.nextWeight > target.lastWeight
+    val instructionColor = if (isWeightIncrease) Green500 else Orange500
+    val instructionBg = if (isWeightIncrease) Green500.copy(alpha = 0.1f) else Orange500.copy(alpha = 0.1f)
+    val instructionIcon = if (isWeightIncrease) Icons.Default.FitnessCenter else Icons.Default.TrendingUp
+
     Surface(
         shape = RoundedCornerShape(12.dp),
         color = DarkCard,
@@ -302,7 +310,20 @@ private fun CoachExerciseCard(target: CoachExerciseTarget) {
                     fontSize = 14.sp,
                     modifier = Modifier.weight(1f)
                 )
+                // Rep range badge
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = Blue500.copy(alpha = 0.1f)
+                ) {
+                    Text(
+                        "${target.targetRepsMin}-${target.targetRepsMax} reps",
+                        color = Blue400,
+                        fontSize = 10.sp,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
                 if (target.isNewPR) {
+                    Spacer(Modifier.width(4.dp))
                     Surface(
                         shape = RoundedCornerShape(6.dp),
                         color = Green500.copy(alpha = 0.15f)
@@ -337,19 +358,19 @@ private fun CoachExerciseCard(target: CoachExerciseTarget) {
 
             Spacer(Modifier.height(6.dp))
 
-            // Next target
+            // Next target - green for weight increase, orange for rep progression
             Surface(
                 shape = RoundedCornerShape(8.dp),
-                color = Orange500.copy(alpha = 0.1f),
+                color = instructionBg,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
                     modifier = Modifier.padding(10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Default.TrendingUp, null, tint = Orange500, modifier = Modifier.size(16.dp))
+                    Icon(instructionIcon, null, tint = instructionColor, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text(target.nextInstruction, color = Orange500, fontSize = 12.sp)
+                    Text(target.nextInstruction, color = instructionColor, fontSize = 12.sp)
                 }
             }
 

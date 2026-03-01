@@ -1,5 +1,6 @@
 package com.lad.muscletracker.ui.screens
 
+import androidx.activity.compose.BackHandler
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -40,6 +41,7 @@ fun ProfileScreen(
     onExportData: (onResult: (String) -> Unit) -> Unit,
     onBack: () -> Unit
 ) {
+    BackHandler { onBack() }
     val dateFormat = remember { SimpleDateFormat("dd/MM/yyyy", Locale.FRANCE) }
     val context = LocalContext.current
     var exportJson by remember { mutableStateOf<String?>(null) }

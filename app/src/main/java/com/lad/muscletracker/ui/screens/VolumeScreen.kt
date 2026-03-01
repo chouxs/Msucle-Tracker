@@ -1,5 +1,6 @@
 package com.lad.muscletracker.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -49,6 +50,7 @@ fun VolumeScreen(
     weeklyVolume: List<WeeklyMuscleVolume>,
     onBack: () -> Unit
 ) {
+    BackHandler { onBack() }
     Column(
         modifier = Modifier
             .fillMaxSize()

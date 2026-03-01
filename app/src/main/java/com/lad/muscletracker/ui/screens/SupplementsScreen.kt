@@ -1,5 +1,6 @@
 package com.lad.muscletracker.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -22,14 +23,17 @@ import com.lad.muscletracker.ui.theme.*
 fun SupplementsScreen(
     supplementsWithReminders: List<SupplementWithReminders>,
     onAddSupplement: (name: String, dosage: String) -> Unit,
+    onEditSupplement: (com.lad.muscletracker.data.entity.Supplement, name: String, dosage: String) -> Unit,
     onDeleteSupplement: (com.lad.muscletracker.data.entity.Supplement) -> Unit,
     onAddReminder: (supplementId: Long, hour: Int, minute: Int, label: String) -> Unit,
     onDeleteReminder: (SupplementReminder) -> Unit,
     onToggleReminder: (SupplementReminder) -> Unit,
     onBack: () -> Unit
 ) {
+    BackHandler { onBack() }
     var showAddSupplementDialog by remember { mutableStateOf(false) }
     var showAddReminderForId by remember { mutableStateOf<Long?>(null) }
+    var supplementToEdit by remember { mutableStateOf<com.lad.muscletracker.data.entity.Supplement?>(null) }
     var supplementToDelete by remember { mutableStateOf<com.lad.muscletracker.data.entity.Supplement?>(null) }
     var reminderToDelete by remember { mutableStateOf<SupplementReminder?>(null) }
 
@@ -106,6 +110,7 @@ fun SupplementsScreen(
             items(supplementsWithReminders, key = { it.supplement.id }) { swr ->
                 SupplementCard(
                     supplementWithReminders = swr,
+                    onEditSupplement = { supplementToEdit = swr.supplement },
                     onDeleteSupplement = { supplementToDelete = swr.supplement },
                     onAddReminder = { showAddReminderForId = swr.supplement.id },
                     onDeleteReminder = { reminderToDelete = it },
@@ -138,6 +143,18 @@ fun SupplementsScreen(
             onConfirm = { name, dosage ->
                 onAddSupplement(name, dosage)
                 showAddSupplementDialog = false
+            }
+        )
+    }
+
+    // Edit supplement dialog
+    supplementToEdit?.let { supplement ->
+        EditSupplementDialog(
+            supplement = supplement,
+            onDismiss = { supplementToEdit = null },
+            onConfirm = { name, dosage ->
+                onEditSupplement(supplement, name, dosage)
+                supplementToEdit = null
             }
         )
     }
@@ -192,6 +209,7 @@ fun SupplementsScreen(
 @Composable
 private fun SupplementCard(
     supplementWithReminders: SupplementWithReminders,
+    onEditSupplement: () -> Unit,
     onDeleteSupplement: () -> Unit,
     onAddReminder: () -> Unit,
     onDeleteReminder: (SupplementReminder) -> Unit,
@@ -232,6 +250,17 @@ private fun SupplementCard(
                             fontSize = 12.sp
                         )
                     }
+                }
+                IconButton(
+                    onClick = onEditSupplement,
+                    modifier = Modifier.size(28.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Edit,
+                        "Modifier",
+                        tint = Blue400,
+                        modifier = Modifier.size(16.dp)
+                    )
                 }
                 IconButton(
                     onClick = onDeleteSupplement,
@@ -551,6 +580,98 @@ private fun AddReminderDialog(
                         colors = ButtonDefaults.buttonColors(containerColor = Blue600)
                     ) {
                         Text("Ajouter")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun EditSupplementDialog(
+    supplement: com.lad.muscletracker.data.entity.Supplement,
+    onDismiss: () -> Unit,
+    onConfirm: (name: String, dosage: String) -> Unit
+) {
+    var name by remember { mutableStateOf(supplement.name) }
+    var dosage by remember { mutableStateOf(supplement.dosage) }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = DarkSurface
+        ) {
+            Column(modifier = Modifier.padding(20.dp)) {
+                Text(
+                    "Modifier supplement",
+                    color = TextPrimary,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(Modifier.height(16.dp))
+
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Nom") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = TextPrimary,
+                        unfocusedTextColor = TextPrimary,
+                        cursorColor = Blue500,
+                        focusedBorderColor = Blue500,
+                        unfocusedBorderColor = DarkBorder,
+                        focusedLabelColor = Blue400,
+                        unfocusedLabelColor = TextMuted
+                    )
+                )
+
+                Spacer(Modifier.height(12.dp))
+
+                OutlinedTextField(
+                    value = dosage,
+                    onValueChange = { dosage = it },
+                    label = { Text("Dosage (ex: 5g, 1 gelule)") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = TextPrimary,
+                        unfocusedTextColor = TextPrimary,
+                        cursorColor = Blue500,
+                        focusedBorderColor = Blue500,
+                        unfocusedBorderColor = DarkBorder,
+                        focusedLabelColor = Blue400,
+                        unfocusedLabelColor = TextMuted
+                    )
+                )
+
+                Spacer(Modifier.height(20.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text("Annuler")
+                    }
+                    Button(
+                        onClick = {
+                            if (name.isNotBlank()) {
+                                onConfirm(name.trim(), dosage.trim())
+                            }
+                        },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Orange500),
+                        enabled = name.isNotBlank()
+                    ) {
+                        Text("Sauvegarder")
                     }
                 }
             }

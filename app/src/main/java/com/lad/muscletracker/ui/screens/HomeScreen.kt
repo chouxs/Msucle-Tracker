@@ -11,11 +11,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.lad.muscletracker.data.dao.WeeklyMuscleVolume
 import com.lad.muscletracker.data.entity.Workout
 import com.lad.muscletracker.data.entity.WorkoutTemplate
 import com.lad.muscletracker.ui.theme.*
+import com.lad.muscletracker.viewmodel.VolumeLandmarks
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -27,6 +30,7 @@ fun HomeScreen(
     todayTemplates: List<WorkoutTemplate>,
     allTemplates: List<WorkoutTemplate>,
     personalRecords: List<com.lad.muscletracker.data.dao.PersonalRecord>,
+    weeklyVolume: List<WeeklyMuscleVolume> = emptyList(),
     workoutStreak: Int = 0,
     onStartWorkoutFromTemplate: (WorkoutTemplate) -> Unit,
     onStartFreeWorkout: () -> Unit,
@@ -47,13 +51,13 @@ fun HomeScreen(
     ) {
         // Header
         Text(
-            "MuscleTracker",
+            "Muscle Unrecord",
             color = TextPrimary,
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold
         )
         Text(
-            "Programme PPL / Upper-Lower",
+            "Arnold Split Programme",
             color = TextSecondary,
             fontSize = 14.sp
         )
@@ -214,37 +218,63 @@ fun HomeScreen(
                 value = "$totalWorkouts",
                 icon = Icons.Default.CalendarMonth,
                 color = Blue500,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                onClick = onOpenHistory
             )
             StatCard(
                 title = "Cette semaine",
                 value = "$weeklyWorkoutCount",
                 icon = Icons.Default.TrendingUp,
                 color = Green500,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                onClick = onOpenCalendar
             )
             StatCard(
                 title = if (workoutStreak <= 1) "semaine" else "semaines",
                 value = "$workoutStreak",
                 icon = Icons.Default.LocalFireDepartment,
                 color = Orange500,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                onClick = onOpenCalendar
             )
         }
 
         Spacer(Modifier.height(20.dp))
 
         // Last workout card
-        Text(
-            "Derniere seance",
-            color = TextSecondary,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Medium
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                "Derniere seance",
+                color = TextSecondary,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.weight(1f)
+            )
+            if (lastWorkout != null) {
+                Surface(
+                    onClick = onOpenHistory,
+                    shape = RoundedCornerShape(8.dp),
+                    color = Blue500.copy(alpha = 0.1f)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Voir tout", color = Blue400, fontSize = 11.sp)
+                        Spacer(Modifier.width(2.dp))
+                        Icon(Icons.Default.ChevronRight, null, tint = Blue400, modifier = Modifier.size(14.dp))
+                    }
+                }
+            }
+        }
         Spacer(Modifier.height(8.dp))
 
         if (lastWorkout != null) {
             Surface(
+                onClick = onOpenHistory,
                 shape = RoundedCornerShape(12.dp),
                 color = DarkCard,
                 modifier = Modifier.fillMaxWidth()
@@ -265,7 +295,14 @@ fun HomeScreen(
                             lastWorkout.name,
                             color = TextPrimary,
                             fontWeight = FontWeight.SemiBold,
-                            fontSize = 15.sp
+                            fontSize = 15.sp,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Icon(
+                            Icons.Default.ChevronRight,
+                            null,
+                            tint = TextMuted,
+                            modifier = Modifier.size(18.dp)
                         )
                     }
                     Spacer(Modifier.height(8.dp))
@@ -282,7 +319,7 @@ fun HomeScreen(
                             val min = lastWorkout.durationSeconds / 60
                             Text(
                                 "${min} min",
-                                color = TextMuted,
+                                color = Blue400,
                                 fontSize = 12.sp
                             )
                         }
@@ -312,31 +349,160 @@ fun HomeScreen(
 
         // Personal Records
         if (personalRecords.isNotEmpty()) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "Records personnels",
+                    color = TextSecondary,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.weight(1f)
+                )
+                Surface(
+                    onClick = onOpenCoach,
+                    shape = RoundedCornerShape(8.dp),
+                    color = Orange500.copy(alpha = 0.1f)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Voir tout", color = Orange500, fontSize = 11.sp)
+                        Spacer(Modifier.width(2.dp))
+                        Icon(Icons.Default.ChevronRight, null, tint = Orange500, modifier = Modifier.size(14.dp))
+                    }
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+
+            Surface(
+                onClick = onOpenCoach,
+                shape = RoundedCornerShape(12.dp),
+                color = DarkCard,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    personalRecords.take(3).forEach { pr ->
+                        Row(
+                            modifier = Modifier.padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Default.EmojiEvents, null, tint = Orange500, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(10.dp))
+                            Text(pr.exerciseName, color = TextPrimary, fontSize = 13.sp, modifier = Modifier.weight(1f))
+                            Text("${pr.maxWeight}kg", color = Orange500, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        }
+                    }
+                    if (personalRecords.size > 3) {
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            "+${personalRecords.size - 3} autres records",
+                            color = TextMuted,
+                            fontSize = 11.sp,
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(20.dp))
+        }
+
+        // Weekly volume recap
+        if (weeklyVolume.isNotEmpty()) {
+            val volumeMap = weeklyVolume.associateBy { it.muscleGroup }
+            val allGroups = VolumeLandmarks.landmarks.keys.toList()
+            val belowMev = allGroups.filter { group ->
+                val current = volumeMap[group]?.totalSets ?: 0
+                val mev = VolumeLandmarks.landmarks[group]?.mev ?: 0
+                current < mev
+            }
+
             Text(
-                "Records personnels",
+                "Recap volume hebdo",
                 color = TextSecondary,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Medium
             )
             Spacer(Modifier.height(8.dp))
 
-            personalRecords.take(5).forEach { pr ->
-                Surface(
-                    shape = RoundedCornerShape(10.dp),
-                    color = DarkCard,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier.padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(Icons.Default.EmojiEvents, null, tint = Orange500, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(10.dp))
-                        Text(pr.exerciseName, color = TextPrimary, fontSize = 13.sp, modifier = Modifier.weight(1f))
-                        Text("${pr.maxWeight}kg", color = Orange500, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = DarkCard,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    allGroups.forEach { group ->
+                        val current = volumeMap[group]?.totalSets ?: 0
+                        val landmark = VolumeLandmarks.landmarks[group] ?: return@forEach
+                        val ratio = if (landmark.mrv > 0) current.toFloat() / landmark.mrv else 0f
+                        val barColor = when {
+                            current < landmark.mev -> Red500
+                            current >= landmark.mrv -> Orange500
+                            else -> Green500
+                        }
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 3.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                group,
+                                color = TextPrimary,
+                                fontSize = 12.sp,
+                                modifier = Modifier.width(60.dp)
+                            )
+                            Box(modifier = Modifier.weight(1f).height(8.dp)) {
+                                Surface(
+                                    shape = RoundedCornerShape(4.dp),
+                                    color = DarkBorder,
+                                    modifier = Modifier.fillMaxSize()
+                                ) {}
+                                Surface(
+                                    shape = RoundedCornerShape(4.dp),
+                                    color = barColor,
+                                    modifier = Modifier
+                                        .fillMaxHeight()
+                                        .fillMaxWidth(ratio.coerceIn(0f, 1f))
+                                ) {}
+                            }
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                "$current/${landmark.mav}",
+                                color = barColor,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.width(40.dp)
+                            )
+                        }
+                    }
+
+                    if (belowMev.isNotEmpty()) {
+                        Spacer(Modifier.height(8.dp))
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = Red500.copy(alpha = 0.1f),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Default.Warning, null, tint = Red500, modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text(
+                                    "Volume insuffisant: ${belowMev.joinToString(", ")}",
+                                    color = Red500,
+                                    fontSize = 11.sp
+                                )
+                            }
+                        }
                     }
                 }
-                Spacer(Modifier.height(4.dp))
             }
 
             Spacer(Modifier.height(20.dp))
@@ -397,7 +563,7 @@ fun HomeScreen(
 
         Spacer(Modifier.height(10.dp))
 
-        // Row 3: Historique + Progression + Supplements
+        // Row 3: Historique + Progression
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -416,6 +582,15 @@ fun HomeScreen(
                 onClick = onOpenProgress,
                 modifier = Modifier.weight(1f)
             )
+        }
+
+        Spacer(Modifier.height(10.dp))
+
+        // Row 4: Supplements + Calendrier
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
             NavCard(
                 label = "Supplements",
                 icon = Icons.Default.Medication,
@@ -423,15 +598,6 @@ fun HomeScreen(
                 onClick = onOpenSupplements,
                 modifier = Modifier.weight(1f)
             )
-        }
-
-        Spacer(Modifier.height(10.dp))
-
-        // Row 4: Calendrier
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
             NavCard(
                 label = "Calendrier",
                 icon = Icons.Default.CalendarMonth,
@@ -439,10 +605,20 @@ fun HomeScreen(
                 onClick = onOpenCalendar,
                 modifier = Modifier.weight(1f)
             )
-            Spacer(Modifier.weight(2f))
         }
 
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(30.dp))
+
+        // Copyright
+        Text(
+            "\u00A9 Unrecord 2026 — Muscle Unrecord",
+            color = TextMuted.copy(alpha = 0.4f),
+            fontSize = 10.sp,
+            modifier = Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(Modifier.height(12.dp))
     }
 }
 
@@ -477,9 +653,12 @@ fun StatCard(
     value: String,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     color: androidx.compose.ui.graphics.Color,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null
 ) {
     Surface(
+        onClick = onClick ?: {},
+        enabled = onClick != null,
         shape = RoundedCornerShape(12.dp),
         color = color.copy(alpha = 0.1f),
         modifier = modifier

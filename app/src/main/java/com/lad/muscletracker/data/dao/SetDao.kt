@@ -37,6 +37,9 @@ data class ExerciseCoachData(
     val exerciseId: Long,
     val exerciseName: String,
     val muscleGroup: String,
+    val exerciseType: String,
+    val targetRepsMin: Int,
+    val targetRepsMax: Int,
     val lastWeight: Float,
     val lastReps: Int,
     val lastDate: Long
@@ -105,15 +108,15 @@ interface SetDao {
 
     @Query("""
         SELECT e.id as exerciseId, e.name as exerciseName, e.muscleGroup,
+               e.exerciseType, e.targetRepsMin, e.targetRepsMax,
                ws.weight as lastWeight, ws.reps as lastReps, w.date as lastDate
         FROM workout_sets ws
         INNER JOIN exercises e ON ws.exerciseId = e.id
         INNER JOIN workouts w ON ws.workoutId = w.id
-        WHERE w.isCompleted = 1
-        AND ws.id = (
+        WHERE ws.id = (
             SELECT ws2.id FROM workout_sets ws2
             INNER JOIN workouts w2 ON ws2.workoutId = w2.id
-            WHERE ws2.exerciseId = e.id AND w2.isCompleted = 1
+            WHERE ws2.exerciseId = e.id
             ORDER BY w2.date DESC, ws2.setNumber DESC
             LIMIT 1
         )
@@ -136,6 +139,13 @@ interface SetDao {
 
     @Query("SELECT COALESCE(SUM(ws.weight * ws.reps), 0) FROM workout_sets ws INNER JOIN workouts w ON ws.workoutId = w.id WHERE w.isCompleted = 1")
     fun getTotalVolume(): Flow<Float>
+
+    @Query("""
+        SELECT COALESCE(MAX(w.date), 0) FROM workout_sets ws
+        INNER JOIN workouts w ON ws.workoutId = w.id
+        WHERE ws.exerciseId = :exerciseId AND w.isCompleted = 1
+    """)
+    suspend fun getLastUsedDate(exerciseId: Long): Long
 
     @Query("""
         SELECT ws.id, ws.workoutId, ws.exerciseId, e.name as exerciseName,

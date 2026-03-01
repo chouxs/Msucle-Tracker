@@ -3,6 +3,9 @@ package com.lad.muscletracker.ui.components
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -17,7 +20,8 @@ import com.lad.muscletracker.ui.theme.*
 fun ExerciseCard(
     exercise: Exercise,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onToggleFavorite: ((Long) -> Unit)? = null
 ) {
     val groupColor = when (exercise.muscleGroup) {
         "Pecs" -> Red500
@@ -90,6 +94,20 @@ fun ExerciseCard(
                     color = TextMuted,
                     fontSize = 10.sp
                 )
+            }
+
+            if (onToggleFavorite != null) {
+                IconButton(
+                    onClick = { onToggleFavorite(exercise.id) },
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Icon(
+                        if (exercise.isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
+                        contentDescription = "Favori",
+                        tint = if (exercise.isFavorite) Orange500 else TextMuted,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
         }
     }

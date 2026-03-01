@@ -1,8 +1,11 @@
 package com.lad.muscletracker.ui.screens
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -31,10 +34,14 @@ fun WorkoutScreen(
     restTimerSeconds: Int,
     isRestTimerRunning: Boolean,
     progressionHints: Map<Long, String>,
+    warmupHints: Map<Long, String> = emptyMap(),
     isEditing: Boolean = false,
     workoutElapsedSeconds: Int = 0,
+    injectedFavorites: List<Exercise> = emptyList(),
     onAddSet: (exerciseId: Long, weight: Float, reps: Int, setType: String) -> Unit,
     onDeleteSet: (Long) -> Unit,
+    onEditSet: (setId: Long, weight: Float, reps: Int) -> Unit = { _, _, _ -> },
+    onToggleFavorite: (Long) -> Unit = {},
     onStartTimer: (Int) -> Unit,
     onStopTimer: () -> Unit,
     onFinish: () -> Unit,
@@ -47,6 +54,9 @@ fun WorkoutScreen(
     var selectedGroup by remember { mutableStateOf<String?>(null) }
     var selectedSetType by remember { mutableStateOf("working") }
     var exerciseSearchQuery by remember { mutableStateOf("") }
+    var showFinishConfirmation by remember { mutableStateOf(false) }
+
+    BackHandler { showFinishConfirmation = true }
 
     // Group sets by exercise
     val groupedSets = sets.groupBy { it.exerciseId }
@@ -82,11 +92,23 @@ fun WorkoutScreen(
                     Text(timeText, color = Blue400, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                 }
             }
-            TextButton(
+            Button(
                 onClick = onFinish,
-                colors = ButtonDefaults.textButtonColors(contentColor = Green500)
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Green500),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
             ) {
-                Text(if (isEditing) "Sauvegarder" else "Terminer", fontWeight = FontWeight.Bold)
+                Icon(
+                    if (isEditing) Icons.Default.Check else Icons.Default.Stop,
+                    null,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(Modifier.width(4.dp))
+                Text(
+                    if (isEditing) "Sauvegarder" else "Terminer",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp
+                )
             }
         }
 
@@ -114,6 +136,7 @@ fun WorkoutScreen(
                     val completedSets = exerciseSets.size
                     val isDone = completedSets >= templateEx.targetSets
                     val hint = progressionHints[templateEx.exerciseId]
+                    val warmup = warmupHints[templateEx.exerciseId]
 
                     TemplateExerciseCard(
                         templateExercise = templateEx,
@@ -121,6 +144,7 @@ fun WorkoutScreen(
                         sets = exerciseSets,
                         isDone = isDone,
                         progressionHint = hint,
+                        warmupHint = warmup,
                         onSelectForAdd = {
                             selectedExercise = exercises.find { it.id == templateEx.exerciseId }
                             // Auto-start rest timer based on exercise type
@@ -128,8 +152,52 @@ fun WorkoutScreen(
                                 onStartTimer(templateEx.restSeconds)
                             }
                         },
-                        onDeleteSet = onDeleteSet
+                        onDeleteSet = onDeleteSet,
+                        onEditSet = onEditSet
                     )
+                }
+
+                // Show injected favorite exercises (LRU rotation)
+                val templateExIds = templateExercises.map { it.exerciseId }.toSet()
+                val favoritesWithoutSets = injectedFavorites.filter { fav ->
+                    fav.id !in templateExIds && groupedSets[fav.id].isNullOrEmpty()
+                }
+                if (favoritesWithoutSets.isNotEmpty()) {
+                    item(key = "fav_header") {
+                        Row(
+                            modifier = Modifier.padding(vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Default.Star, null, tint = Orange500, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Favoris suggeres", color = Orange500, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+                    items(favoritesWithoutSets, key = { "fav_${it.id}" }) { fav ->
+                        FavoriteExerciseCard(
+                            exercise = fav,
+                            onSelectForAdd = {
+                                selectedExercise = fav
+                            }
+                        )
+                    }
+                }
+
+                // Show extra exercises added outside the template
+                val extraExercises = groupedSets.filter { it.key !in templateExIds }
+                extraExercises.forEach { (exerciseId, exerciseSets) ->
+                    val exerciseName = exerciseSets.firstOrNull()?.exerciseName ?: "?"
+                    val muscleGroup = exerciseSets.firstOrNull()?.muscleGroup ?: ""
+
+                    item(key = "extra_$exerciseId") {
+                        FreeExerciseCard(
+                            exerciseName = exerciseName,
+                            muscleGroup = muscleGroup,
+                            sets = exerciseSets,
+                            onDeleteSet = onDeleteSet,
+                            onEditSet = onEditSet
+                        )
+                    }
                 }
             } else {
                 // Free workout: show grouped sets as before
@@ -142,7 +210,8 @@ fun WorkoutScreen(
                             exerciseName = exerciseName,
                             muscleGroup = muscleGroup,
                             sets = exerciseSets,
-                            onDeleteSet = onDeleteSet
+                            onDeleteSet = onDeleteSet,
+                            onEditSet = onEditSet
                         )
                     }
                 }
@@ -293,9 +362,10 @@ fun WorkoutScreen(
             val templateExIds = templateExercises.map { it.exerciseId }.toSet()
             val templateList = exercises.filter { it.id in templateExIds }
             val otherList = exercises.filter { it.id !in templateExIds }
+                .sortedByDescending { it.isFavorite }
             templateList + otherList
         } else {
-            exercises
+            exercises.sortedByDescending { it.isFavorite }
         }
         val groups = pickerExercises.map { it.muscleGroup }.distinct().sorted()
 
@@ -327,7 +397,9 @@ fun WorkoutScreen(
                 Spacer(Modifier.height(8.dp))
 
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     FilterChip(
@@ -335,7 +407,7 @@ fun WorkoutScreen(
                         onClick = { selectedGroup = null },
                         label = { Text("Tous", fontSize = 11.sp) }
                     )
-                    groups.take(5).forEach { group ->
+                    groups.forEach { group ->
                         FilterChip(
                             selected = selectedGroup == group,
                             onClick = { selectedGroup = if (selectedGroup == group) null else group },
@@ -362,13 +434,34 @@ fun WorkoutScreen(
                                 showExercisePicker = false
                                 selectedGroup = null
                                 exerciseSearchQuery = ""
-                            }
+                            },
+                            onToggleFavorite = { onToggleFavorite(it) }
                         )
                         Spacer(Modifier.height(4.dp))
                     }
                 }
             }
         }
+    }
+
+    if (showFinishConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showFinishConfirmation = false },
+            title = { Text("Terminer la seance?", color = TextPrimary) },
+            text = { Text("Le temps sera comptabilise et la seance sauvegardee.", color = TextSecondary) },
+            containerColor = DarkSurface,
+            confirmButton = {
+                TextButton(onClick = {
+                    showFinishConfirmation = false
+                    onFinish()
+                }) { Text("Terminer", color = Green500) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showFinishConfirmation = false }) {
+                    Text("Continuer", color = Blue400)
+                }
+            }
+        )
     }
 }
 
@@ -379,8 +472,10 @@ private fun TemplateExerciseCard(
     sets: List<SetWithExerciseName>,
     isDone: Boolean,
     progressionHint: String?,
+    warmupHint: String? = null,
     onSelectForAdd: () -> Unit,
-    onDeleteSet: (Long) -> Unit
+    onDeleteSet: (Long) -> Unit,
+    onEditSet: (setId: Long, weight: Float, reps: Int) -> Unit
 ) {
     val groupColor = when (templateExercise.muscleGroup) {
         "Pecs" -> Red500
@@ -446,6 +541,24 @@ private fun TemplateExerciseCard(
                 fontSize = 11.sp
             )
 
+            if (warmupHint != null && completedSets == 0) {
+                Spacer(Modifier.height(4.dp))
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = Blue400.copy(alpha = 0.1f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.Whatshot, null, tint = Blue400, modifier = Modifier.size(14.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Echauff: $warmupHint", color = Blue400, fontSize = 11.sp)
+                    }
+                }
+            }
+
             if (progressionHint != null) {
                 Spacer(Modifier.height(4.dp))
                 Surface(
@@ -472,7 +585,8 @@ private fun TemplateExerciseCard(
                         weight = set.weight,
                         reps = set.reps,
                         setType = set.setType,
-                        onDelete = { onDeleteSet(set.id) }
+                        onDelete = { onDeleteSet(set.id) },
+                        onEdit = { w, r -> onEditSet(set.id, w, r) }
                     )
                     Spacer(Modifier.height(3.dp))
                 }
@@ -498,7 +612,8 @@ private fun FreeExerciseCard(
     exerciseName: String,
     muscleGroup: String,
     sets: List<SetWithExerciseName>,
-    onDeleteSet: (Long) -> Unit
+    onDeleteSet: (Long) -> Unit,
+    onEditSet: (setId: Long, weight: Float, reps: Int) -> Unit
 ) {
     val groupColor = when (muscleGroup) {
         "Pecs" -> Red500
@@ -545,9 +660,67 @@ private fun FreeExerciseCard(
                     weight = set.weight,
                     reps = set.reps,
                     setType = set.setType,
-                    onDelete = { onDeleteSet(set.id) }
+                    onDelete = { onDeleteSet(set.id) },
+                    onEdit = { w, r -> onEditSet(set.id, w, r) }
                 )
                 Spacer(Modifier.height(4.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun FavoriteExerciseCard(
+    exercise: Exercise,
+    onSelectForAdd: () -> Unit
+) {
+    val groupColor = when (exercise.muscleGroup) {
+        "Pecs" -> Red500
+        "Dos" -> Blue500
+        "Jambes" -> Green500
+        "Epaules" -> Orange500
+        "Bras" -> Purple500
+        "Abdos" -> Blue400
+        else -> TextSecondary
+    }
+
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = Orange500.copy(alpha = 0.06f),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Star, null, tint = Orange500, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(6.dp))
+                Surface(
+                    shape = RoundedCornerShape(4.dp),
+                    color = groupColor,
+                    modifier = Modifier.size(4.dp, 20.dp)
+                ) {}
+                Spacer(Modifier.width(8.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        exercise.name,
+                        color = TextPrimary,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(exercise.muscleGroup, color = groupColor, fontSize = 10.sp)
+                        Text("Favori", color = Orange500, fontSize = 10.sp)
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(6.dp))
+            TextButton(
+                onClick = onSelectForAdd,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(4.dp))
+                Text("Ajouter serie", fontSize = 12.sp)
             }
         }
     }

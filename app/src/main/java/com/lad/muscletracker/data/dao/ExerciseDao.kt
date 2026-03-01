@@ -32,4 +32,13 @@ interface ExerciseDao {
 
     @Query("SELECT COUNT(*) FROM exercises")
     suspend fun count(): Int
+
+    @Query("UPDATE exercises SET isFavorite = NOT isFavorite WHERE id = :id")
+    suspend fun toggleFavorite(id: Long)
+
+    @Query("SELECT * FROM exercises WHERE isFavorite = 1 AND isActive = 1 ORDER BY muscleGroup, name")
+    fun getFavoriteExercises(): Flow<List<Exercise>>
+
+    @Query("SELECT * FROM exercises WHERE isFavorite = 1 AND muscleGroup = :group AND isActive = 1 ORDER BY name")
+    suspend fun getFavoritesByGroup(group: String): List<Exercise>
 }

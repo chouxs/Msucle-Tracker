@@ -20,6 +20,9 @@ class WorkoutRepository(
     fun getExercisesByDayType(dayType: String) = exerciseDao.getExercisesByDayType(dayType)
     fun getAllMuscleGroups() = exerciseDao.getAllMuscleGroups()
     suspend fun addExercise(exercise: Exercise) = exerciseDao.insert(exercise)
+    suspend fun toggleFavorite(exerciseId: Long) = exerciseDao.toggleFavorite(exerciseId)
+    fun getFavoriteExercises() = exerciseDao.getFavoriteExercises()
+    suspend fun getFavoritesByGroup(group: String) = exerciseDao.getFavoritesByGroup(group)
 
     // Workouts
     fun getAllWorkouts() = workoutDao.getAllWorkouts()
@@ -33,6 +36,7 @@ class WorkoutRepository(
     suspend fun getAllWorkoutsOnce() = workoutDao.getAllWorkoutsOnce()
     suspend fun getAllSetsOnce() = setDao.getAllSetsOnce()
     fun getWorkoutsByMonth(monthStart: Long, monthEnd: Long) = workoutDao.getWorkoutsByMonth(monthStart, monthEnd)
+    suspend fun getUnfinishedWorkout() = workoutDao.getUnfinishedWorkout()
 
     // Sets
     fun getSetsForWorkout(workoutId: Long) = setDao.getSetsForWorkout(workoutId)
@@ -45,6 +49,7 @@ class WorkoutRepository(
     fun getAllExercisesWithLastPerformance() = setDao.getAllExercisesWithLastPerformance()
     fun getAllPersonalRecords() = setDao.getAllPersonalRecords()
     fun getTotalVolume() = setDao.getTotalVolume()
+    suspend fun getLastUsedDate(exerciseId: Long) = setDao.getLastUsedDate(exerciseId)
 
     // Templates
     fun getAllTemplates() = templateDao.getAllTemplates()
@@ -57,6 +62,7 @@ class WorkoutRepository(
     suspend fun addSupplement(supplement: Supplement) = supplementDao.insertSupplement(supplement)
     suspend fun addReminder(reminder: SupplementReminder) = supplementDao.insertReminder(reminder)
     suspend fun updateReminder(reminder: SupplementReminder) = supplementDao.updateReminder(reminder)
+    suspend fun updateSupplement(supplement: Supplement) = supplementDao.updateSupplement(supplement)
     suspend fun deleteSupplement(supplement: Supplement) = supplementDao.deleteSupplement(supplement)
     suspend fun deleteReminder(reminder: SupplementReminder) = supplementDao.deleteReminder(reminder)
     suspend fun getAllEnabledReminders() = supplementDao.getAllEnabledReminders()
@@ -83,5 +89,6 @@ class WorkoutRepository(
     fun getWeeklyCaloriesBurned(start: Long, end: Long) = cardioDao.getWeeklyCaloriesBurned(start, end)
     fun getWeeklyDistance(start: Long, end: Long) = cardioDao.getWeeklyDistance(start, end)
     suspend fun addCardioSession(session: CardioSession) = cardioDao.insert(session)
+    suspend fun updateCardioSession(session: CardioSession) = cardioDao.update(session)
     suspend fun deleteCardioSession(session: CardioSession) = cardioDao.delete(session)
 }

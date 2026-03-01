@@ -15,5 +15,6 @@ data class Exercise(
     val restSeconds: Int = 90,
     val exerciseType: String = "compound", // "compound" or "isolation"
     val dayType: String = "",              // "push", "pull", "legs", "upper", "lower", "fullbody"
-    val isActive: Boolean = true
+    val isActive: Boolean = true,
+    val isFavorite: Boolean = false
 )

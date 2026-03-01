@@ -48,43 +48,136 @@ object SeedData {
         Exercise(name = "Developpe couche halteres", muscleGroup = "Pecs", targetSets = 3, targetRepsMin = 8, targetRepsMax = 12, restSeconds = 120, exerciseType = "compound", dayType = "fullbody"),
         Exercise(name = "Squat goblet", muscleGroup = "Jambes", targetSets = 3, targetRepsMin = 10, targetRepsMax = 12, restSeconds = 120, exerciseType = "compound", dayType = "fullbody"),
         Exercise(name = "Curl biceps superset", muscleGroup = "Bras", targetSets = 2, targetRepsMin = 10, targetRepsMax = 12, restSeconds = 60, exerciseType = "isolation", dayType = "fullbody"),
-        Exercise(name = "Extension triceps superset", muscleGroup = "Bras", targetSets = 2, targetRepsMin = 10, targetRepsMax = 12, restSeconds = 60, exerciseType = "isolation", dayType = "fullbody")
+        Exercise(name = "Extension triceps superset", muscleGroup = "Bras", targetSets = 2, targetRepsMin = 10, targetRepsMax = 12, restSeconds = 60, exerciseType = "isolation", dayType = "fullbody"),
+
+        // === EXTRA PECS ===
+        Exercise(name = "Developpe decline barre", muscleGroup = "Pecs", targetSets = 4, targetRepsMin = 6, targetRepsMax = 10, restSeconds = 120, exerciseType = "compound"),
+        Exercise(name = "Developpe decline halteres", muscleGroup = "Pecs", targetSets = 4, targetRepsMin = 6, targetRepsMax = 10, restSeconds = 120, exerciseType = "compound"),
+        Exercise(name = "Ecarte halteres", muscleGroup = "Pecs", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
+        Exercise(name = "Ecarte incline halteres", muscleGroup = "Pecs", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
+        Exercise(name = "Pec deck / Butterfly", muscleGroup = "Pecs", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
+        Exercise(name = "Dips pecs", muscleGroup = "Pecs", targetSets = 4, targetRepsMin = 6, targetRepsMax = 10, restSeconds = 120, exerciseType = "compound"),
+        Exercise(name = "Pompes", muscleGroup = "Pecs", targetSets = 4, targetRepsMin = 6, targetRepsMax = 10, restSeconds = 120, exerciseType = "compound"),
+        Exercise(name = "Pullover haltere", muscleGroup = "Pecs", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
+        Exercise(name = "Developpe couche Smith", muscleGroup = "Pecs", targetSets = 4, targetRepsMin = 6, targetRepsMax = 10, restSeconds = 120, exerciseType = "compound"),
+        Exercise(name = "Cable crossover", muscleGroup = "Pecs", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
+
+        // === EXTRA DOS ===
+        Exercise(name = "Tirage vertical poitrine", muscleGroup = "Dos", targetSets = 4, targetRepsMin = 6, targetRepsMax = 10, restSeconds = 120, exerciseType = "compound"),
+        Exercise(name = "Rowing T-barre", muscleGroup = "Dos", targetSets = 4, targetRepsMin = 6, targetRepsMax = 10, restSeconds = 120, exerciseType = "compound"),
+        Exercise(name = "Rowing Pendlay", muscleGroup = "Dos", targetSets = 4, targetRepsMin = 6, targetRepsMax = 10, restSeconds = 120, exerciseType = "compound"),
+        Exercise(name = "Tirage bras tendus", muscleGroup = "Dos", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
+        Exercise(name = "Rowing machine", muscleGroup = "Dos", targetSets = 4, targetRepsMin = 6, targetRepsMax = 10, restSeconds = 120, exerciseType = "compound"),
+        Exercise(name = "Souleve de terre classique", muscleGroup = "Dos", targetSets = 4, targetRepsMin = 6, targetRepsMax = 10, restSeconds = 120, exerciseType = "compound"),
+        Exercise(name = "Hyperextension", muscleGroup = "Dos", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
+        Exercise(name = "Good morning", muscleGroup = "Dos", targetSets = 4, targetRepsMin = 6, targetRepsMax = 10, restSeconds = 120, exerciseType = "compound"),
+        Exercise(name = "Shrugs barre", muscleGroup = "Dos", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
+        Exercise(name = "Shrugs halteres", muscleGroup = "Dos", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
+        Exercise(name = "Tirage vertical prise serree", muscleGroup = "Dos", targetSets = 4, targetRepsMin = 6, targetRepsMax = 10, restSeconds = 120, exerciseType = "compound"),
+        Exercise(name = "Pullover cable", muscleGroup = "Dos", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
+
+        // === EXTRA EPAULES ===
+        Exercise(name = "Elevations frontales", muscleGroup = "Epaules", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
+        Exercise(name = "Oiseau / Reverse fly", muscleGroup = "Epaules", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
+        Exercise(name = "Elevation laterale cable", muscleGroup = "Epaules", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
+        Exercise(name = "Arnold press", muscleGroup = "Epaules", targetSets = 4, targetRepsMin = 6, targetRepsMax = 10, restSeconds = 120, exerciseType = "compound"),
+        Exercise(name = "Tirage menton", muscleGroup = "Epaules", targetSets = 4, targetRepsMin = 6, targetRepsMax = 10, restSeconds = 120, exerciseType = "compound"),
+        Exercise(name = "Developpe militaire Smith", muscleGroup = "Epaules", targetSets = 4, targetRepsMin = 6, targetRepsMax = 10, restSeconds = 120, exerciseType = "compound"),
+        Exercise(name = "Oiseau poulie basse", muscleGroup = "Epaules", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
+        Exercise(name = "L-fly couche", muscleGroup = "Epaules", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
+
+        // === EXTRA BRAS - Biceps ===
+        Exercise(name = "Curl incline halteres", muscleGroup = "Bras", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
+        Exercise(name = "Curl concentre", muscleGroup = "Bras", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
+        Exercise(name = "Curl barre EZ", muscleGroup = "Bras", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
+        Exercise(name = "Curl cable", muscleGroup = "Bras", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
+        Exercise(name = "Curl inverse", muscleGroup = "Bras", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
+        Exercise(name = "Curl spider", muscleGroup = "Bras", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
+        Exercise(name = "Curl 21s", muscleGroup = "Bras", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
+
+        // === EXTRA BRAS - Triceps ===
+        Exercise(name = "Dips triceps", muscleGroup = "Bras", targetSets = 4, targetRepsMin = 6, targetRepsMax = 10, restSeconds = 120, exerciseType = "compound"),
+        Exercise(name = "Extension triceps corde", muscleGroup = "Bras", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
+        Exercise(name = "Kickback triceps", muscleGroup = "Bras", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
+        Exercise(name = "Extension triceps overhead", muscleGroup = "Bras", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
+        Exercise(name = "Pompes diamant", muscleGroup = "Bras", targetSets = 4, targetRepsMin = 6, targetRepsMax = 10, restSeconds = 120, exerciseType = "compound"),
+        Exercise(name = "Developpe couche prise serree", muscleGroup = "Bras", targetSets = 4, targetRepsMin = 6, targetRepsMax = 10, restSeconds = 120, exerciseType = "compound"),
+        Exercise(name = "Extension triceps haltere", muscleGroup = "Bras", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
+
+        // === EXTRA BRAS - Avant-bras ===
+        Exercise(name = "Curl poignet", muscleGroup = "Bras", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
+        Exercise(name = "Reverse curl poignet", muscleGroup = "Bras", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
+        Exercise(name = "Farmer walk", muscleGroup = "Bras", targetSets = 4, targetRepsMin = 6, targetRepsMax = 10, restSeconds = 120, exerciseType = "compound"),
+
+        // === EXTRA JAMBES - Quadriceps ===
+        Exercise(name = "Hack squat", muscleGroup = "Jambes", targetSets = 4, targetRepsMin = 6, targetRepsMax = 10, restSeconds = 120, exerciseType = "compound"),
+        Exercise(name = "Squat front", muscleGroup = "Jambes", targetSets = 4, targetRepsMin = 6, targetRepsMax = 10, restSeconds = 120, exerciseType = "compound"),
+        Exercise(name = "Sissy squat", muscleGroup = "Jambes", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
+        Exercise(name = "Fentes marchees", muscleGroup = "Jambes", targetSets = 4, targetRepsMin = 6, targetRepsMax = 10, restSeconds = 120, exerciseType = "compound"),
+        Exercise(name = "Step-up", muscleGroup = "Jambes", targetSets = 4, targetRepsMin = 6, targetRepsMax = 10, restSeconds = 120, exerciseType = "compound"),
+        Exercise(name = "Squat Smith", muscleGroup = "Jambes", targetSets = 4, targetRepsMin = 6, targetRepsMax = 10, restSeconds = 120, exerciseType = "compound"),
+        Exercise(name = "Fentes halteres", muscleGroup = "Jambes", targetSets = 4, targetRepsMin = 6, targetRepsMax = 10, restSeconds = 120, exerciseType = "compound"),
+
+        // === EXTRA JAMBES - Ischio/Fessiers ===
+        Exercise(name = "Souleve de terre sumo", muscleGroup = "Jambes", targetSets = 4, targetRepsMin = 6, targetRepsMax = 10, restSeconds = 120, exerciseType = "compound"),
+        Exercise(name = "Hip thrust", muscleGroup = "Jambes", targetSets = 4, targetRepsMin = 6, targetRepsMax = 10, restSeconds = 120, exerciseType = "compound"),
+        Exercise(name = "Glute ham raise", muscleGroup = "Jambes", targetSets = 4, targetRepsMin = 6, targetRepsMax = 10, restSeconds = 120, exerciseType = "compound"),
+        Exercise(name = "Nordic curl", muscleGroup = "Jambes", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
+        Exercise(name = "Leg curl debout", muscleGroup = "Jambes", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
+        Exercise(name = "Kickback fessier cable", muscleGroup = "Jambes", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
+        Exercise(name = "Abduction machine", muscleGroup = "Jambes", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
+        Exercise(name = "Adduction machine", muscleGroup = "Jambes", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
+
+        // === EXTRA JAMBES - Mollets ===
+        Exercise(name = "Mollets presse", muscleGroup = "Jambes", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
+
+        // === EXTRA ABDOS ===
+        Exercise(name = "Crunch classique", muscleGroup = "Abdos", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
+        Exercise(name = "Releve de jambes", muscleGroup = "Abdos", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
+        Exercise(name = "Planche", muscleGroup = "Abdos", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
+        Exercise(name = "Ab wheel", muscleGroup = "Abdos", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
+        Exercise(name = "Russian twist", muscleGroup = "Abdos", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
+        Exercise(name = "Gainage lateral", muscleGroup = "Abdos", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
+        Exercise(name = "Releve de jambes suspendu", muscleGroup = "Abdos", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
+        Exercise(name = "Sit-up", muscleGroup = "Abdos", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
+        Exercise(name = "Mountain climbers", muscleGroup = "Abdos", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
+        Exercise(name = "Crunch oblique", muscleGroup = "Abdos", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
+        Exercise(name = "Rotation tronc poulie", muscleGroup = "Abdos", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation"),
+        Exercise(name = "Dragon flag", muscleGroup = "Abdos", targetSets = 3, targetRepsMin = 10, targetRepsMax = 15, restSeconds = 75, exerciseType = "isolation")
     )
 
     fun getDefaultTemplates(): List<WorkoutTemplate> = listOf(
-        WorkoutTemplate(name = "Push", dayOfWeek = 2, description = "Pecs, Epaules, Triceps"),   // Monday (Calendar.MONDAY=2)
-        WorkoutTemplate(name = "Pull", dayOfWeek = 3, description = "Dos, Biceps, Arriere epaule"), // Tuesday
-        WorkoutTemplate(name = "Legs", dayOfWeek = 4, description = "Quadriceps, Ischio, Mollets"), // Wednesday
-        WorkoutTemplate(name = "Upper", dayOfWeek = 5, description = "Haut du corps - Compose"),   // Thursday
-        WorkoutTemplate(name = "Lower", dayOfWeek = 6, description = "Bas du corps + Abdos"),       // Friday
-        WorkoutTemplate(name = "Full Body", dayOfWeek = 0, description = "Seance complete optionnelle") // Any day
+        WorkoutTemplate(name = "Chest + Back", dayOfWeek = 2, description = "Pecs et Dos - Arnold Split"),
+        WorkoutTemplate(name = "Arms + Shoulders", dayOfWeek = 3, description = "Bras et Epaules"),
+        WorkoutTemplate(name = "Legs", dayOfWeek = 4, description = "Jambes completes"),
+        WorkoutTemplate(name = "Chest + Back", dayOfWeek = 5, description = "Pecs et Dos - Arnold Split"),
+        WorkoutTemplate(name = "Shoulders + Arms", dayOfWeek = 6, description = "Epaules et Bras"),
+        WorkoutTemplate(name = "Full Body", dayOfWeek = 7, description = "Seance complete optionnelle"),
+        WorkoutTemplate(name = "Full Body", dayOfWeek = 1, description = "Seance complete optionnelle")
     )
 
     // Map exercise names to their template day types
     private val templateExerciseMap = mapOf(
-        "Push" to listOf(
-            "Developpe couche barre", "Developpe militaire", "Developpe incline halteres",
-            "Ecarte poulie", "Elevations laterales", "Extension triceps poulie"
+        "Chest + Back" to listOf(
+            "Developpe couche barre", "Developpe incline halteres", "Ecarte poulie",
+            "Cable crossover", "Traction pronation", "Rowing barre",
+            "Tirage horizontal cable", "Souleve de terre classique"
         ),
-        "Pull" to listOf(
-            "Rowing barre", "Traction pronation", "Tirage horizontal cable",
-            "Face pull", "Curl biceps barre", "Curl marteau"
+        "Arms + Shoulders" to listOf(
+            "Developpe militaire", "Elevations laterales", "Face pull",
+            "Curl biceps barre", "Curl marteau", "Extension triceps poulie", "Barre au front"
         ),
         "Legs" to listOf(
-            "Squat barre", "Souleve de terre roumain", "Fentes / Squat bulgare",
-            "Leg curl allonge", "Mollets debout"
+            "Squat barre", "Presse a cuisses", "Souleve de terre roumain",
+            "Leg extension", "Leg curl allonge", "Mollets debout", "Crunch cable"
         ),
-        "Upper" to listOf(
-            "Developpe incline halteres", "Traction supination", "Developpe epaules halteres",
-            "Rowing haltere", "Elevations laterales", "Curl pupitre", "Barre au front"
-        ),
-        "Lower" to listOf(
-            "Presse a cuisses", "Souleve de terre roumain", "Leg extension",
-            "Leg curl assis", "Mollets assis", "Crunch cable"
+        "Shoulders + Arms" to listOf(
+            "Arnold press", "Elevation laterale cable", "Oiseau / Reverse fly",
+            "Curl incline halteres", "Curl pupitre", "Extension triceps corde", "Dips triceps"
         ),
         "Full Body" to listOf(
             "Developpe couche halteres", "Traction pronation", "Squat goblet",
-            "Developpe epaules halteres", "Curl biceps superset", "Extension triceps superset"
+            "Developpe epaules halteres", "Curl biceps barre", "Extension triceps poulie", "Crunch cable"
         )
     )
 
@@ -99,36 +192,39 @@ object SeedData {
 
         // Re-fetch to get generated IDs
         val allExercises = mutableMapOf<String, Long>()
-        // We need a simple query - use a workaround since we can't easily get all at once in suspend
         exercises.forEach { ex ->
             val inserted = exerciseDao.getByName(ex.name)
             if (inserted != null) allExercises[ex.name] = inserted.id
         }
 
-        // Insert templates
+        // Insert templates - track by name+dow since names can repeat
         val templates = getDefaultTemplates()
-        val templateIds = mutableMapOf<String, Long>()
+        val templateIdsByKey = mutableMapOf<String, Long>()
         templates.forEach { template ->
             val id = templateDao.insert(template)
-            templateIds[template.name] = id
+            templateIdsByKey["${template.name}_${template.dayOfWeek}"] = id
         }
 
         // Link exercises to templates
         templateExerciseMap.forEach { (templateName, exerciseNames) ->
-            val templateId = templateIds[templateName] ?: return@forEach
-            exerciseNames.forEachIndexed { index, exerciseName ->
-                val exerciseId = allExercises[exerciseName] ?: return@forEachIndexed
-                val exercise = exercises.find { it.name == exerciseName } ?: return@forEachIndexed
-                templateExerciseDao.insert(
-                    TemplateExercise(
-                        templateId = templateId,
-                        exerciseId = exerciseId,
-                        sortOrder = index,
-                        targetSets = exercise.targetSets,
-                        targetRepsMin = exercise.targetRepsMin,
-                        targetRepsMax = exercise.targetRepsMax
+            // Find all templates with this name
+            val matchingKeys = templateIdsByKey.keys.filter { it.startsWith("${templateName}_") }
+            matchingKeys.forEach { key ->
+                val templateId = templateIdsByKey[key] ?: return@forEach
+                exerciseNames.forEachIndexed { index, exerciseName ->
+                    val exerciseId = allExercises[exerciseName] ?: return@forEachIndexed
+                    val exercise = exercises.find { it.name == exerciseName } ?: return@forEachIndexed
+                    templateExerciseDao.insert(
+                        TemplateExercise(
+                            templateId = templateId,
+                            exerciseId = exerciseId,
+                            sortOrder = index,
+                            targetSets = exercise.targetSets,
+                            targetRepsMin = exercise.targetRepsMin,
+                            targetRepsMax = exercise.targetRepsMax
+                        )
                     )
-                )
+                }
             }
         }
     }

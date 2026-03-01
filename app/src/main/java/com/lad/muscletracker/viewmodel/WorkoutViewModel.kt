@@ -67,17 +67,30 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
     private val _workoutElapsedSeconds = MutableStateFlow(0)
     val workoutElapsedSeconds: StateFlow<Int> = _workoutElapsedSeconds
     private var elapsedTimerJob: Job? = null
+    private var restTimerJob: Job? = null
 
-    private val vibrator = application.applicationContext.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+    private val vibrator = try {
+        application.applicationContext.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+    } catch (_: Exception) { null }
 
     // Progression hints for current workout
     private val _progressionHints = MutableStateFlow<Map<Long, String>>(emptyMap())
     val progressionHints: StateFlow<Map<Long, String>> = _progressionHints
 
+    private val _warmupHints = MutableStateFlow<Map<Long, String>>(emptyMap())
+    val warmupHints: StateFlow<Map<Long, String>> = _warmupHints
+
     // Data flows
     val allExercises = repository.getAllExercises().stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList()
     )
+
+    val favoriteExercises = repository.getFavoriteExercises().stateIn(
+        viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList()
+    )
+
+    private val _injectedFavorites = MutableStateFlow<List<com.lad.muscletracker.data.entity.Exercise>>(emptyList())
+    val injectedFavorites: StateFlow<List<com.lad.muscletracker.data.entity.Exercise>> = _injectedFavorites
 
     val muscleGroups = repository.getAllMuscleGroups().stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList()
@@ -158,6 +171,9 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
         val exerciseId: Long,
         val exerciseName: String,
         val muscleGroup: String,
+        val exerciseType: String,
+        val targetRepsMin: Int,
+        val targetRepsMax: Int,
         val lastWeight: Float,
         val lastReps: Int,
         val lastDate: Long,
@@ -175,12 +191,17 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
         .combine(repository.getAllPersonalRecords()) { exercises, prs ->
             val prMap = prs.associateBy { it.exerciseId }
             exercises.map { ex ->
-                val suggestion = getProgressionSuggestion(ex.exerciseId, 12)
+                val suggestion = getProgressionSuggestion(
+                    ex.exerciseId, ex.targetRepsMin, ex.targetRepsMax, ex.exerciseType
+                )
                 val pr = prMap[ex.exerciseId]
                 CoachExerciseTarget(
                     exerciseId = ex.exerciseId,
                     exerciseName = ex.exerciseName,
                     muscleGroup = ex.muscleGroup,
+                    exerciseType = ex.exerciseType,
+                    targetRepsMin = ex.targetRepsMin,
+                    targetRepsMax = ex.targetRepsMax,
                     lastWeight = ex.lastWeight,
                     lastReps = ex.lastReps,
                     lastDate = ex.lastDate,
@@ -280,14 +301,29 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
         return cal.timeInMillis
     }
 
+    // Auto-restore unfinished workout on app start
+    init {
+        viewModelScope.launch {
+            val unfinished = repository.getUnfinishedWorkout()
+            if (unfinished != null) {
+                _currentWorkoutId.value = unfinished.id
+                _currentTemplateId.value = unfinished.templateId
+                _workoutStartTime.value = unfinished.date
+                startElapsedTimer()
+                unfinished.templateId?.let { loadProgressionHints(it) }
+            }
+        }
+    }
+
     // Workout management
     fun startNewWorkout(name: String) {
         viewModelScope.launch {
             val workout = Workout(name = name)
             val id = repository.createWorkout(workout)
+            val created = repository.getWorkoutById(id)
             _currentWorkoutId.value = id
             _currentTemplateId.value = null
-            _workoutStartTime.value = System.currentTimeMillis()
+            _workoutStartTime.value = created?.date ?: System.currentTimeMillis()
             _progressionHints.value = emptyMap()
             startElapsedTimer()
         }
@@ -297,20 +333,49 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch {
             val workout = Workout(name = template.name, templateId = template.id)
             val id = repository.createWorkout(workout)
+            val created = repository.getWorkoutById(id)
             _currentWorkoutId.value = id
             _currentTemplateId.value = template.id
-            _workoutStartTime.value = System.currentTimeMillis()
+            _workoutStartTime.value = created?.date ?: System.currentTimeMillis()
             startElapsedTimer()
             // Load progression hints for all exercises in this template
             loadProgressionHints(template.id)
+            // Inject favorite exercises not in template (LRU rotation)
+            injectFavoriteExercises(template.id)
         }
+    }
+
+    private suspend fun injectFavoriteExercises(templateId: Long) {
+        val templateExs = repository.getExercisesForTemplate(templateId).first()
+        val templateExIds = templateExs.map { it.exerciseId }.toSet()
+        val muscleGroups = templateExs.map { it.muscleGroup }.distinct()
+
+        val injected = mutableListOf<com.lad.muscletracker.data.entity.Exercise>()
+        val maxPerGroup = 2
+
+        for (group in muscleGroups) {
+            val favorites = repository.getFavoritesByGroup(group)
+            val newFavorites = favorites.filter { it.id !in templateExIds }
+            if (newFavorites.isEmpty()) continue
+
+            // Sort by last usage date (LRU first = oldest date first)
+            val sorted = newFavorites.map { fav ->
+                fav to repository.getLastUsedDate(fav.id)
+            }.sortedBy { it.second }.map { it.first }
+
+            injected.addAll(sorted.take(maxPerGroup))
+        }
+
+        _injectedFavorites.value = injected
     }
 
     private fun startElapsedTimer() {
         elapsedTimerJob?.cancel()
+        val startTime = _workoutStartTime.value
+        if (startTime <= 0L) return
         elapsedTimerJob = viewModelScope.launch {
             while (_currentWorkoutId.value != null) {
-                val elapsed = ((System.currentTimeMillis() - _workoutStartTime.value) / 1000).toInt()
+                val elapsed = ((System.currentTimeMillis() - startTime) / 1000).toInt()
                 _workoutElapsedSeconds.value = elapsed
                 delay(1000)
             }
@@ -319,14 +384,50 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
 
     private suspend fun loadProgressionHints(templateId: Long) {
         val hints = mutableMapOf<Long, String>()
+        val warmups = mutableMapOf<Long, String>()
         val templateExercises = repository.getExercisesForTemplate(templateId).first()
         for (te in templateExercises) {
-            val suggestion = getProgressionSuggestion(te.exerciseId, te.targetRepsMax)
+            val suggestion = getProgressionSuggestion(
+                te.exerciseId, te.targetRepsMin, te.targetRepsMax, te.exerciseType
+            )
             if (suggestion != null) {
                 hints[te.exerciseId] = suggestion.second
+                // Generate warmup for compound exercises
+                if (te.exerciseType == "compound" && suggestion.first > 20f) {
+                    warmups[te.exerciseId] = generateWarmup(suggestion.first)
+                } else if (suggestion.first > 0f) {
+                    val light = roundWeight(suggestion.first * 0.5f)
+                    warmups[te.exerciseId] = "${light}kg x12"
+                }
+            } else {
+                // No previous data - guide user
+                hints[te.exerciseId] = if (te.exerciseType == "compound")
+                    "1ere fois: commence barre a vide (20kg) et monte progressivement"
+                else
+                    "1ere fois: commence leger, vise ${te.targetRepsMin}-${te.targetRepsMax} reps"
             }
         }
         _progressionHints.value = hints
+        _warmupHints.value = warmups
+    }
+
+    private fun generateWarmup(workingWeight: Float): String {
+        val sets = mutableListOf<String>()
+        if (workingWeight > 40f) {
+            sets.add("${roundWeight(20f).toInt()}kg x12")
+            sets.add("${roundWeight(workingWeight * 0.5f).toInt()}kg x8")
+            sets.add("${roundWeight(workingWeight * 0.75f).toInt()}kg x4")
+        } else if (workingWeight > 20f) {
+            sets.add("${roundWeight(workingWeight * 0.5f).toInt()}kg x10")
+            sets.add("${roundWeight(workingWeight * 0.75f).toInt()}kg x6")
+        } else {
+            sets.add("${roundWeight(workingWeight * 0.5f).toInt()}kg x12")
+        }
+        return sets.joinToString(" → ")
+    }
+
+    private fun roundWeight(weight: Float): Float {
+        return (Math.round(weight / 2.5f) * 2.5f)
     }
 
     fun resumeWorkout(workoutId: Long) {
@@ -335,6 +436,8 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
             _currentWorkoutId.value = workoutId
             _isEditingWorkout.value = true
             _currentTemplateId.value = workout.templateId
+            _workoutStartTime.value = workout.date
+            startElapsedTimer()
             workout.templateId?.let { loadProgressionHints(it) }
         }
     }
@@ -342,16 +445,16 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
     fun finishWorkout() {
         viewModelScope.launch {
             val id = _currentWorkoutId.value ?: return@launch
-            if (!_isEditingWorkout.value) {
-                val workout = repository.getWorkoutById(id) ?: return@launch
-                val duration = ((System.currentTimeMillis() - _workoutStartTime.value) / 1000).toInt()
-                repository.updateWorkout(workout.copy(durationSeconds = duration, isCompleted = true))
-            }
+            val workout = repository.getWorkoutById(id) ?: return@launch
+            val duration = ((System.currentTimeMillis() - workout.date) / 1000).toInt()
+            repository.updateWorkout(workout.copy(durationSeconds = duration, isCompleted = true))
             _currentWorkoutId.value = null
             _currentTemplateId.value = null
             _isEditingWorkout.value = false
             _workoutStartTime.value = 0
             _progressionHints.value = emptyMap()
+            _warmupHints.value = emptyMap()
+            _injectedFavorites.value = emptyList()
             elapsedTimerJob?.cancel()
             _workoutElapsedSeconds.value = 0
             stopRestTimer()
@@ -385,6 +488,10 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch { repository.updateSet(setId, weight, reps) }
     }
 
+    fun toggleFavorite(exerciseId: Long) {
+        viewModelScope.launch { repository.toggleFavorite(exerciseId) }
+    }
+
     fun selectExerciseForProgress(exerciseId: Long) {
         _selectedExerciseId.value = exerciseId
     }
@@ -393,20 +500,49 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch { repository.deleteWorkout(workout) }
     }
 
-    // Double progression: get suggestion for next set
-    suspend fun getProgressionSuggestion(exerciseId: Long, targetRepsMax: Int): Pair<Float, String>? {
+    // Double progression for strength/hypertrophy:
+    // - Stay in target rep range (e.g. 6-10 compounds, 10-15 isolation)
+    // - Add reps until ceiling → then increase weight, reset to floor
+    // - Compounds: +2.5kg, Isolation: +1.25kg
+    suspend fun getProgressionSuggestion(
+        exerciseId: Long,
+        targetRepsMin: Int,
+        targetRepsMax: Int,
+        exerciseType: String = "compound"
+    ): Pair<Float, String>? {
         val lastPerf = repository.getLastPerformance(exerciseId, 4)
         if (lastPerf.isEmpty()) return null
 
-        val allReachedMax = lastPerf.all { it.reps >= targetRepsMax }
         val lastWeight = lastPerf.first().weight
         val lastReps = lastPerf.first().reps
+        val allReachedMax = lastPerf.all { it.reps >= targetRepsMax }
 
-        return if (allReachedMax) {
-            val increment = if (lastWeight >= 40f) 2.5f else 1.25f
-            Pair(lastWeight + increment, "Charge! ${lastWeight + increment}kg x 6 reps")
-        } else {
-            Pair(lastWeight, "Derniere fois: ${lastWeight}kg x $lastReps. Vise ${lastReps + 1} reps")
+        // Weight increment: compound +2.5kg, isolation +1.25kg (small weights under 20kg also +1.25kg)
+        val increment = when {
+            exerciseType == "isolation" && lastWeight < 30f -> 1.25f
+            exerciseType == "isolation" -> 2.5f
+            lastWeight < 20f -> 1.25f
+            else -> 2.5f
+        }
+
+        return when {
+            // All sets hit ceiling → INCREASE WEIGHT, reset to floor reps
+            allReachedMax -> {
+                val newWeight = roundWeight(lastWeight + increment)
+                Pair(newWeight, "Augmente! ${newWeight}kg x $targetRepsMin reps ($targetRepsMin-$targetRepsMax)")
+            }
+            // Last reps at or above max but not all sets → stabilize all sets at ceiling
+            lastReps >= targetRepsMax -> {
+                Pair(lastWeight, "${lastWeight}kg → stabilise toutes tes series a $targetRepsMax reps puis monte")
+            }
+            // In range → add 1 rep (strength progression)
+            lastReps >= targetRepsMin -> {
+                Pair(lastWeight, "${lastWeight}kg x ${lastReps + 1} reps (objectif: $targetRepsMax pour monter)")
+            }
+            // Below minimum → weight too heavy or need to build up
+            else -> {
+                Pair(lastWeight, "${lastWeight}kg x $targetRepsMin reps min (force ton range $targetRepsMin-$targetRepsMax)")
+            }
         }
     }
 
@@ -416,6 +552,12 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
     fun addSupplement(name: String, dosage: String) {
         viewModelScope.launch {
             repository.addSupplement(Supplement(name = name, dosage = dosage))
+        }
+    }
+
+    fun updateSupplement(supplement: Supplement, name: String, dosage: String) {
+        viewModelScope.launch {
+            repository.updateSupplement(supplement.copy(name = name, dosage = dosage))
         }
     }
 
@@ -618,16 +760,31 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
         return ((met * userWeightKg * durationMinutes * 3.5f) / 200f).toInt()
     }
 
-    fun addCardioSession(type: String, distanceKm: Float, durationMinutes: Int, inclinePercent: Float) {
+    fun addCardioSession(type: String, speedKmh: Float, durationMinutes: Int, inclinePercent: Float) {
         viewModelScope.launch {
             val profile = repository.getProfileOnce()
             val weightKg = profile?.weightKg ?: 70f
-            val avgSpeed = if (durationMinutes > 0) distanceKm / (durationMinutes / 60f) else 0f
+            val distanceKm = speedKmh * (durationMinutes / 60f)
             val calories = calculateCardioCalories(type, distanceKm, durationMinutes, inclinePercent, weightKg)
             repository.addCardioSession(
                 CardioSession(
                     type = type, distanceKm = distanceKm, durationMinutes = durationMinutes,
-                    inclinePercent = inclinePercent, caloriesBurned = calories, avgSpeedKmh = avgSpeed
+                    inclinePercent = inclinePercent, caloriesBurned = calories, avgSpeedKmh = speedKmh
+                )
+            )
+        }
+    }
+
+    fun updateCardioSession(session: CardioSession, speedKmh: Float, durationMinutes: Int, inclinePercent: Float) {
+        viewModelScope.launch {
+            val profile = repository.getProfileOnce()
+            val weightKg = profile?.weightKg ?: 70f
+            val distanceKm = speedKmh * (durationMinutes / 60f)
+            val calories = calculateCardioCalories(session.type, distanceKm, durationMinutes, inclinePercent, weightKg)
+            repository.updateCardioSession(
+                session.copy(
+                    distanceKm = distanceKm, durationMinutes = durationMinutes,
+                    inclinePercent = inclinePercent, caloriesBurned = calories, avgSpeedKmh = speedKmh
                 )
             )
         }
@@ -707,17 +864,20 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
 
     // Rest timer
     fun startRestTimer(seconds: Int = 90) {
+        restTimerJob?.cancel()
         _restTimerSeconds.value = seconds
         _isRestTimerRunning.value = true
-        viewModelScope.launch {
+        restTimerJob = viewModelScope.launch {
             while (_restTimerSeconds.value > 0 && _isRestTimerRunning.value) {
                 delay(1000)
                 if (_isRestTimerRunning.value) {
                     _restTimerSeconds.value -= 1
                     if (_restTimerSeconds.value == 0) {
-                        vibrator?.vibrate(
-                            VibrationEffect.createWaveform(longArrayOf(0, 300, 200, 300), -1)
-                        )
+                        try {
+                            vibrator?.vibrate(
+                                VibrationEffect.createWaveform(longArrayOf(0, 300, 200, 300), -1)
+                            )
+                        } catch (_: Exception) { }
                     }
                 }
             }
@@ -726,6 +886,7 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun stopRestTimer() {
+        restTimerJob?.cancel()
         _isRestTimerRunning.value = false
         _restTimerSeconds.value = 0
     }

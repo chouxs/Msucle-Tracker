@@ -1,5 +1,6 @@
 package com.lad.muscletracker.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -35,6 +36,7 @@ fun ProgressScreen(
     onSelectExercise: (Long) -> Unit,
     onBack: () -> Unit
 ) {
+    BackHandler { onBack() }
     val selectedExercise = exercises.find { it.id == selectedExerciseId }
 
     Column(

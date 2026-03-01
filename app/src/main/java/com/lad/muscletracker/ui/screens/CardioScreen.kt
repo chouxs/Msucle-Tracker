@@ -1,8 +1,7 @@
 package com.lad.muscletracker.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -13,7 +12,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -32,31 +30,44 @@ fun CardioScreen(
     weeklyCalories: Int,
     weeklyDistance: Float,
     userWeightKg: Float,
-    onAddSession: (type: String, distanceKm: Float, durationMinutes: Int, inclinePercent: Float) -> Unit,
+    onAddSession: (type: String, speedKmh: Float, durationMinutes: Int, inclinePercent: Float) -> Unit,
+    onUpdateSession: (session: CardioSession, speedKmh: Float, durationMinutes: Int, inclinePercent: Float) -> Unit = { _, _, _, _ -> },
     onDeleteSession: (CardioSession) -> Unit,
     onBack: () -> Unit
 ) {
+    BackHandler { onBack() }
     var sessionToDelete by remember { mutableStateOf<CardioSession?>(null) }
+    var editingSession by remember { mutableStateOf<CardioSession?>(null) }
+
     var selectedType by remember { mutableStateOf("walk") }
-    var distanceText by remember { mutableStateOf("") }
+    var speedText by remember { mutableStateOf("") }
     var durationText by remember { mutableStateOf("") }
     var inclineText by remember { mutableStateOf("") }
 
+    // Pre-fill form when editing
+    LaunchedEffect(editingSession) {
+        editingSession?.let { session ->
+            selectedType = session.type
+            speedText = "%.1f".format(session.avgSpeedKmh)
+            durationText = session.durationMinutes.toString()
+            inclineText = if (session.inclinePercent > 0) "%.1f".format(session.inclinePercent) else ""
+        }
+    }
+
     val dateFormat = remember { SimpleDateFormat("dd/MM HH:mm", Locale.FRANCE) }
 
-    val liveCalories by remember(selectedType, distanceText, durationText, inclineText, userWeightKg) {
+    val liveCalories by remember(selectedType, speedText, durationText, inclineText, userWeightKg) {
         derivedStateOf {
-            val distance = distanceText.toFloatOrNull() ?: 0f
+            val speed = speedText.replace(",", ".").toFloatOrNull() ?: 0f
             val duration = durationText.toIntOrNull() ?: 0
-            val incline = inclineText.toFloatOrNull() ?: 0f
+            val incline = inclineText.replace(",", ".").toFloatOrNull() ?: 0f
 
-            if (duration <= 0 || distance <= 0f) {
+            if (duration <= 0 || speed <= 0f) {
                 0
             } else {
                 val met = if (selectedType == "walk") {
                     3.5f + 0.18f * incline
                 } else {
-                    val speed = distance / (duration / 60f)
                     when {
                         speed <= 8f -> 6f
                         speed <= 9.5f -> 8.3f
@@ -72,40 +83,38 @@ fun CardioScreen(
         }
     }
 
+    val liveDistance by remember(speedText, durationText) {
+        derivedStateOf {
+            val speed = speedText.replace(",", ".").toFloatOrNull() ?: 0f
+            val duration = durationText.toIntOrNull() ?: 0
+            speed * (duration / 60f)
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
-        // 1. Top bar
+        // Top bar
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
         ) {
             IconButton(onClick = onBack) {
-                Icon(
-                    imageVector = Icons.Default.ArrowBack,
-                    contentDescription = "Retour",
-                    tint = TextPrimary
-                )
+                Icon(Icons.Default.ArrowBack, "Retour", tint = TextPrimary)
             }
-            Text(
-                text = "Cardio",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                color = TextPrimary
-            )
+            Text("Cardio", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(Modifier.height(16.dp))
 
-        // 2. Weekly stats row
+        // Weekly stats
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Left: weekly calories
             Surface(
                 modifier = Modifier.weight(1f),
                 shape = RoundedCornerShape(12.dp),
@@ -115,24 +124,11 @@ fun CardioScreen(
                     modifier = Modifier.padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(
-                        text = "$weeklyCalories kcal",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Orange500,
-                        textAlign = TextAlign.Center
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Brulees cette semaine",
-                        fontSize = 12.sp,
-                        color = TextSecondary,
-                        textAlign = TextAlign.Center
-                    )
+                    Text("$weeklyCalories kcal", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Orange500, textAlign = TextAlign.Center)
+                    Spacer(Modifier.height(4.dp))
+                    Text("Brulees cette semaine", fontSize = 12.sp, color = TextSecondary, textAlign = TextAlign.Center)
                 }
             }
-
-            // Right: weekly distance
             Surface(
                 modifier = Modifier.weight(1f),
                 shape = RoundedCornerShape(12.dp),
@@ -142,52 +138,53 @@ fun CardioScreen(
                     modifier = Modifier.padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(
-                        text = "%.1f km".format(weeklyDistance),
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Green500,
-                        textAlign = TextAlign.Center
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Distance semaine",
-                        fontSize = 12.sp,
-                        color = TextSecondary,
-                        textAlign = TextAlign.Center
-                    )
+                    Text("%.1f km".format(weeklyDistance), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Green500, textAlign = TextAlign.Center)
+                    Spacer(Modifier.height(4.dp))
+                    Text("Distance semaine", fontSize = 12.sp, color = TextSecondary, textAlign = TextAlign.Center)
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(Modifier.height(16.dp))
 
-        // 3. Add session card
+        // Add/Edit session card
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
             color = DarkCard
         ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Text(
-                    text = "Nouvelle session",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimary
-                )
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        if (editingSession != null) "Modifier session" else "Nouvelle session",
+                        fontSize = 18.sp, fontWeight = FontWeight.Bold, color = TextPrimary
+                    )
+                    if (editingSession != null) {
+                        Spacer(Modifier.weight(1f))
+                        TextButton(onClick = {
+                            editingSession = null
+                            selectedType = "walk"
+                            speedText = ""
+                            durationText = ""
+                            inclineText = ""
+                        }) {
+                            Text("Annuler", color = TextMuted, fontSize = 12.sp)
+                        }
+                    }
+                }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(Modifier.height(12.dp))
 
                 // Type selector
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilterChip(
                         selected = selectedType == "walk",
                         onClick = { selectedType = "walk" },
                         label = { Text("Marche") },
+                        enabled = editingSession == null,
                         colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = Blue600,
                             selectedLabelColor = TextPrimary,
@@ -198,6 +195,7 @@ fun CardioScreen(
                         selected = selectedType == "run",
                         onClick = { selectedType = "run" },
                         label = { Text("Course") },
+                        enabled = editingSession == null,
                         colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = Blue600,
                             selectedLabelColor = TextPrimary,
@@ -206,26 +204,23 @@ fun CardioScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(Modifier.height(12.dp))
 
-                // Distance
+                // Speed
                 OutlinedTextField(
-                    value = distanceText,
-                    onValueChange = { distanceText = it },
-                    label = { Text("Distance (km)", color = TextMuted) },
+                    value = speedText,
+                    onValueChange = { speedText = it },
+                    label = { Text("Vitesse (km/h)", color = TextMuted) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = TextPrimary,
-                        unfocusedTextColor = TextPrimary,
-                        focusedBorderColor = Blue500,
-                        unfocusedBorderColor = DarkBorder,
-                        cursorColor = Blue400
+                        focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary,
+                        focusedBorderColor = Blue500, unfocusedBorderColor = DarkBorder, cursorColor = Blue400
                     ),
                     singleLine = true
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(Modifier.height(8.dp))
 
                 // Duration
                 OutlinedTextField(
@@ -235,19 +230,15 @@ fun CardioScreen(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = TextPrimary,
-                        unfocusedTextColor = TextPrimary,
-                        focusedBorderColor = Blue500,
-                        unfocusedBorderColor = DarkBorder,
-                        cursorColor = Blue400
+                        focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary,
+                        focusedBorderColor = Blue500, unfocusedBorderColor = DarkBorder, cursorColor = Blue400
                     ),
                     singleLine = true
                 )
 
                 // Incline (only for walk)
                 if (selectedType == "walk") {
-                    Spacer(modifier = Modifier.height(8.dp))
-
+                    Spacer(Modifier.height(8.dp))
                     OutlinedTextField(
                         value = inclineText,
                         onValueChange = { inclineText = it },
@@ -255,221 +246,151 @@ fun CardioScreen(
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                         modifier = Modifier.fillMaxWidth(),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = TextPrimary,
-                            unfocusedTextColor = TextPrimary,
-                            focusedBorderColor = Blue500,
-                            unfocusedBorderColor = DarkBorder,
-                            cursorColor = Blue400
+                            focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary,
+                            focusedBorderColor = Blue500, unfocusedBorderColor = DarkBorder, cursorColor = Blue400
                         ),
                         singleLine = true
                     )
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(Modifier.height(12.dp))
 
-                // Live calorie preview
-                if (liveCalories > 0) {
+                // Live preview: distance + calories
+                if (liveCalories > 0 || liveDistance > 0f) {
                     Row(
-                        verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center
+                        horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.LocalFireDepartment,
-                            contentDescription = null,
-                            tint = Orange500,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "~$liveCalories kcal",
-                            color = Orange500,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp
-                        )
+                        if (liveDistance > 0f) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.Straighten, null, tint = Green500, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text("%.2f km".format(liveDistance), color = Green500, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            }
+                        }
+                        if (liveCalories > 0) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.LocalFireDepartment, null, tint = Orange500, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text("~$liveCalories kcal", color = Orange500, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            }
+                        }
                     }
-
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(Modifier.height(12.dp))
                 }
 
-                // Save button
+                // Save/Update button
                 Button(
                     onClick = {
-                        val distance = distanceText.toFloatOrNull() ?: 0f
+                        val speed = speedText.replace(",", ".").toFloatOrNull() ?: 0f
                         val duration = durationText.toIntOrNull() ?: 0
-                        val incline = inclineText.toFloatOrNull() ?: 0f
-                        if (distance > 0f && duration > 0) {
-                            onAddSession(selectedType, distance, duration, incline)
-                            distanceText = ""
+                        val incline = inclineText.replace(",", ".").toFloatOrNull() ?: 0f
+                        if (speed > 0f && duration > 0) {
+                            val editing = editingSession
+                            if (editing != null) {
+                                onUpdateSession(editing, speed, duration, incline)
+                                editingSession = null
+                            } else {
+                                onAddSession(selectedType, speed, duration, incline)
+                            }
+                            speedText = ""
                             durationText = ""
                             inclineText = ""
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = Blue600),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (editingSession != null) Orange500 else Blue600
+                    ),
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
+                        if (editingSession != null) Icons.Default.Save else Icons.Default.Add,
+                        null, modifier = Modifier.size(18.dp)
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Spacer(Modifier.width(4.dp))
                     Text(
-                        text = "Enregistrer",
+                        if (editingSession != null) "Mettre a jour" else "Enregistrer",
                         fontWeight = FontWeight.Bold
                     )
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(Modifier.height(16.dp))
 
-        // 4. Session history
+        // Session history
         if (sessions.isNotEmpty()) {
-            Text(
-                text = "Historique",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = TextPrimary
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
+            Text("Historique", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+            Spacer(Modifier.height(8.dp))
 
             sessions.forEach { session ->
                 Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                     shape = RoundedCornerShape(12.dp),
-                    color = DarkCard
+                    color = if (editingSession?.id == session.id) Blue600.copy(alpha = 0.15f) else DarkCard
                 ) {
-                    Column(
-                        modifier = Modifier.padding(12.dp)
-                    ) {
-                        // Type icon + date row
+                    Column(modifier = Modifier.padding(12.dp)) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Icon(
-                                imageVector = if (session.type == "walk")
-                                    Icons.Default.DirectionsWalk
-                                else
-                                    Icons.Default.DirectionsRun,
-                                contentDescription = null,
+                                if (session.type == "walk") Icons.Default.DirectionsWalk else Icons.Default.DirectionsRun,
+                                null,
                                 tint = if (session.type == "walk") Green500 else Blue400,
                                 modifier = Modifier.size(24.dp)
                             )
-                            Spacer(modifier = Modifier.width(8.dp))
+                            Spacer(Modifier.width(8.dp))
                             Text(
-                                text = if (session.type == "walk") "Marche" else "Course",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = TextPrimary
+                                if (session.type == "walk") "Marche" else "Course",
+                                fontSize = 16.sp, fontWeight = FontWeight.Bold, color = TextPrimary
                             )
-                            Spacer(modifier = Modifier.weight(1f))
-                            Text(
-                                text = dateFormat.format(Date(session.date)),
-                                fontSize = 13.sp,
-                                color = TextMuted
-                            )
+                            Spacer(Modifier.weight(1f))
+                            Text(dateFormat.format(Date(session.date)), fontSize = 13.sp, color = TextMuted)
                         }
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(Modifier.height(8.dp))
 
-                        // Stats row
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceEvenly
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(
-                                    text = "%.1f km".format(session.distanceKm),
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = TextPrimary
-                                )
-                                Text(
-                                    text = "Distance",
-                                    fontSize = 11.sp,
-                                    color = TextMuted
-                                )
+                                Text("%.1f km".format(session.distanceKm), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                                Text("Distance", fontSize = 11.sp, color = TextMuted)
                             }
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(
-                                    text = "${session.durationMinutes} min",
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = TextPrimary
-                                )
-                                Text(
-                                    text = "Duree",
-                                    fontSize = 11.sp,
-                                    color = TextMuted
-                                )
+                                Text("${session.durationMinutes} min", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                                Text("Duree", fontSize = 11.sp, color = TextMuted)
                             }
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(
-                                    text = "%.1f km/h".format(session.avgSpeedKmh),
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = TextPrimary
-                                )
-                                Text(
-                                    text = "Vitesse",
-                                    fontSize = 11.sp,
-                                    color = TextMuted
-                                )
+                                Text("%.1f km/h".format(session.avgSpeedKmh), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                                Text("Vitesse", fontSize = 11.sp, color = TextMuted)
                             }
-                            if (session.type == "walk") {
+                            if (session.type == "walk" && session.inclinePercent > 0) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text(
-                                        text = "%.1f%%".format(session.inclinePercent),
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = TextPrimary
-                                    )
-                                    Text(
-                                        text = "Inclinaison",
-                                        fontSize = 11.sp,
-                                        color = TextMuted
-                                    )
+                                    Text("%.1f%%".format(session.inclinePercent), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                                    Text("Inclinaison", fontSize = 11.sp, color = TextMuted)
                                 }
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(Modifier.height(8.dp))
 
-                        // Calories + delete row
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.LocalFireDepartment,
-                                contentDescription = null,
-                                tint = Orange500,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "${session.caloriesBurned} kcal",
-                                color = Orange500,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp
-                            )
-                            Spacer(modifier = Modifier.weight(1f))
-                            IconButton(
-                                onClick = { sessionToDelete = session },
-                                modifier = Modifier.size(32.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Delete,
-                                    contentDescription = "Supprimer",
-                                    tint = Red500,
-                                    modifier = Modifier.size(20.dp)
-                                )
+                            Icon(Icons.Default.LocalFireDepartment, null, tint = Orange500, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("${session.caloriesBurned} kcal", color = Orange500, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Spacer(Modifier.weight(1f))
+                            IconButton(onClick = { editingSession = session }, modifier = Modifier.size(32.dp)) {
+                                Icon(Icons.Default.Edit, "Modifier", tint = Blue400, modifier = Modifier.size(20.dp))
+                            }
+                            IconButton(onClick = { sessionToDelete = session }, modifier = Modifier.size(32.dp)) {
+                                Icon(Icons.Default.Delete, "Supprimer", tint = Red500, modifier = Modifier.size(20.dp))
                             }
                         }
                     }
@@ -477,8 +398,7 @@ fun CardioScreen(
             }
         }
 
-        // Bottom spacing
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(Modifier.height(16.dp))
     }
 
     sessionToDelete?.let { session ->

@@ -35,4 +35,7 @@ interface WorkoutDao {
 
     @Query("SELECT * FROM workouts WHERE date >= :monthStart AND date < :monthEnd ORDER BY date ASC")
     fun getWorkoutsByMonth(monthStart: Long, monthEnd: Long): Flow<List<Workout>>
+
+    @Query("SELECT * FROM workouts WHERE isCompleted = 0 ORDER BY date DESC LIMIT 1")
+    suspend fun getUnfinishedWorkout(): Workout?
 }

@@ -1,5 +1,6 @@
 package com.lad.muscletracker.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -30,6 +31,7 @@ fun HistoryScreen(
     onEditWorkout: (Workout) -> Unit,
     onBack: () -> Unit
 ) {
+    BackHandler { onBack() }
     var expandedWorkoutId by remember { mutableStateOf<Long?>(null) }
     var workoutToDelete by remember { mutableStateOf<Workout?>(null) }
 

@@ -18,6 +18,9 @@ interface CardioDao {
     @Insert
     suspend fun insert(session: CardioSession): Long
 
+    @Update
+    suspend fun update(session: CardioSession)
+
     @Delete
     suspend fun delete(session: CardioSession)
 }

@@ -35,6 +35,9 @@ interface SupplementDao {
     @Update
     suspend fun updateReminder(reminder: SupplementReminder)
 
+    @Update
+    suspend fun updateSupplement(supplement: Supplement)
+
     @Delete
     suspend fun deleteSupplement(supplement: Supplement)
 

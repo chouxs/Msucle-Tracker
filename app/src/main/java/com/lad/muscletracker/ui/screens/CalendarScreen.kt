@@ -1,5 +1,6 @@
 package com.lad.muscletracker.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -27,9 +28,13 @@ import java.util.*
 fun CalendarScreen(
     selectedMonth: Long,
     monthWorkouts: List<Workout>,
+    totalWorkouts: Int,
+    weeklyWorkoutCount: Int,
     onChangeMonth: (Int) -> Unit,
     onBack: () -> Unit
 ) {
+    BackHandler { onBack() }
+
     val cal = remember(selectedMonth) {
         Calendar.getInstance().apply { timeInMillis = selectedMonth }
     }
@@ -206,24 +211,82 @@ fun CalendarScreen(
         Spacer(Modifier.height(16.dp))
 
         // Stats for the month
-        val totalMonthWorkouts = monthWorkouts.size
-        val totalMonthMinutes = monthWorkouts.sumOf { it.durationSeconds } / 60
+        val completedMonthWorkouts = monthWorkouts.filter { it.isCompleted }
+        val totalMonthWorkouts = completedMonthWorkouts.size
+        val totalMonthMinutes = completedMonthWorkouts.sumOf { it.durationSeconds } / 60
+        val avgDurationMin = if (totalMonthWorkouts > 0) totalMonthMinutes / totalMonthWorkouts else 0
+
+        // Count workout days per week in this month
+        val weeksWithWorkouts = remember(monthWorkouts) {
+            val weeks = mutableSetOf<Int>()
+            completedMonthWorkouts.forEach { w ->
+                val wCal = Calendar.getInstance()
+                wCal.timeInMillis = w.date
+                weeks.add(wCal.get(Calendar.WEEK_OF_YEAR))
+            }
+            weeks.size
+        }
+        val avgPerWeek = if (weeksWithWorkouts > 0) "%.1f".format(totalMonthWorkouts.toFloat() / weeksWithWorkouts) else "0"
+
+        Text(
+            "Statistiques",
+            color = TextSecondary,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Medium
+        )
+        Spacer(Modifier.height(8.dp))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             StatCard(
-                title = "Seances",
+                title = "Ce mois",
                 value = "$totalMonthWorkouts",
                 icon = Icons.Default.FitnessCenter,
                 color = Blue500,
                 modifier = Modifier.weight(1f)
             )
             StatCard(
-                title = "Minutes",
-                value = "$totalMonthMinutes",
+                title = "Cette semaine",
+                value = "$weeklyWorkoutCount",
+                icon = Icons.Default.DateRange,
+                color = Green500,
+                modifier = Modifier.weight(1f)
+            )
+            StatCard(
+                title = "Total",
+                value = "$totalWorkouts",
+                icon = Icons.Default.EmojiEvents,
+                color = Orange500,
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        Spacer(Modifier.height(10.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            StatCard(
+                title = "Duree totale",
+                value = if (totalMonthMinutes >= 60) "${totalMonthMinutes / 60}h${totalMonthMinutes % 60}" else "${totalMonthMinutes}m",
                 icon = Icons.Default.Timer,
+                color = Blue400,
+                modifier = Modifier.weight(1f)
+            )
+            StatCard(
+                title = "Moy/seance",
+                value = "${avgDurationMin}m",
+                icon = Icons.Default.AvTimer,
+                color = Purple500,
+                modifier = Modifier.weight(1f)
+            )
+            StatCard(
+                title = "Moy/semaine",
+                value = avgPerWeek,
+                icon = Icons.Default.TrendingUp,
                 color = Green500,
                 modifier = Modifier.weight(1f)
             )
