@@ -76,6 +76,7 @@ fun MainContent(viewModel: WorkoutViewModel = viewModel()) {
     val currentTemplateExercises by viewModel.currentTemplateExercises.collectAsStateWithLifecycle()
     val progressionHints by viewModel.progressionHints.collectAsStateWithLifecycle()
     val warmupHints by viewModel.warmupHints.collectAsStateWithLifecycle()
+    val liveCoachFeedback by viewModel.liveCoachFeedback.collectAsStateWithLifecycle()
     val weeklyVolume by viewModel.weeklyVolume.collectAsStateWithLifecycle()
     val coachTargets by viewModel.coachTargets.collectAsStateWithLifecycle()
     val personalRecords by viewModel.allPersonalRecords.collectAsStateWithLifecycle()
@@ -104,18 +105,12 @@ fun MainContent(viewModel: WorkoutViewModel = viewModel()) {
     var selectedExerciseIdForProgress by remember { mutableStateOf<Long?>(null) }
     var isStartingWorkout by remember { mutableStateOf(false) }
 
-    // Navigate to WORKOUT screen when currentWorkoutId becomes non-null after starting
+    // Navigate to WORKOUT screen whenever there's an active workout
+    // Handles: new workout, editing, AND rotation/config change recovery
     LaunchedEffect(currentWorkoutId) {
-        if (currentWorkoutId != null && isStartingWorkout) {
+        if (currentWorkoutId != null) {
+            currentScreen = Screen.WORKOUT
             isStartingWorkout = false
-            currentScreen = Screen.WORKOUT
-        }
-    }
-
-    // Navigate to WORKOUT screen when editing a past workout
-    LaunchedEffect(currentWorkoutId, isEditingWorkout) {
-        if (currentWorkoutId != null && isEditingWorkout) {
-            currentScreen = Screen.WORKOUT
         }
     }
 
@@ -167,6 +162,7 @@ fun MainContent(viewModel: WorkoutViewModel = viewModel()) {
                     isRestTimerRunning = isRestTimerRunning,
                     progressionHints = progressionHints,
                     warmupHints = warmupHints,
+                    liveCoachFeedback = liveCoachFeedback,
                     isEditing = isEditingWorkout,
                     workoutElapsedSeconds = workoutElapsedSeconds,
                     injectedFavorites = injectedFavorites,

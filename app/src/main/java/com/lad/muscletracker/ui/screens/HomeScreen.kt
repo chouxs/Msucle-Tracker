@@ -219,7 +219,7 @@ fun HomeScreen(
                 icon = Icons.Default.CalendarMonth,
                 color = Blue500,
                 modifier = Modifier.weight(1f),
-                onClick = onOpenHistory
+                onClick = onOpenCalendar
             )
             StatCard(
                 title = "Cette semaine",
@@ -609,9 +609,9 @@ fun HomeScreen(
 
         Spacer(Modifier.height(30.dp))
 
-        // Copyright
+        // Copyright + version
         Text(
-            "\u00A9 Unrecord 2026 — Muscle Unrecord",
+            "\u00A9 Unrecord 2026 — Muscle Unrecord v5.0",
             color = TextMuted.copy(alpha = 0.4f),
             fontSize = 10.sp,
             modifier = Modifier.fillMaxWidth(),

@@ -37,6 +37,7 @@ fun WorkoutScreen(
     isRestTimerRunning: Boolean,
     progressionHints: Map<Long, String>,
     warmupHints: Map<Long, String> = emptyMap(),
+    liveCoachFeedback: Map<Long, String> = emptyMap(),
     isEditing: Boolean = false,
     workoutElapsedSeconds: Int = 0,
     injectedFavorites: List<Exercise> = emptyList(),
@@ -91,7 +92,7 @@ fun WorkoutScreen(
                     if (isEditing) "Modifier seance" else "Seance en cours",
                     color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold
                 )
-                if (!isEditing && workoutElapsedSeconds > 0) {
+                if (workoutElapsedSeconds > 0) {
                     val hours = workoutElapsedSeconds / 3600
                     val minutes = (workoutElapsedSeconds % 3600) / 60
                     val secs = workoutElapsedSeconds % 60
@@ -145,6 +146,7 @@ fun WorkoutScreen(
                     val isDone = completedSets >= templateEx.targetSets
                     val hint = progressionHints[templateEx.exerciseId]
                     val warmup = warmupHints[templateEx.exerciseId]
+                    val liveFeedback = liveCoachFeedback[templateEx.exerciseId]
 
                     TemplateExerciseCard(
                         templateExercise = templateEx,
@@ -153,6 +155,7 @@ fun WorkoutScreen(
                         isDone = isDone,
                         progressionHint = hint,
                         warmupHint = warmup,
+                        liveCoachFeedback = liveFeedback,
                         onSelectForAdd = {
                             selectedExercise = exercises.find { it.id == templateEx.exerciseId }
                             // Auto-start rest timer based on exercise type
@@ -261,22 +264,34 @@ fun WorkoutScreen(
 
                 Spacer(Modifier.height(8.dp))
 
-                // Progression hint
+                // Live coach feedback (priority) or static progression hint
                 selectedExercise?.let { ex ->
+                    val liveFb = liveCoachFeedback[ex.id]
                     val hint = progressionHints[ex.id]
-                    if (hint != null) {
+                    val displayText = liveFb ?: hint
+                    val isLive = liveFb != null
+                    if (displayText != null) {
                         Surface(
                             shape = RoundedCornerShape(8.dp),
-                            color = Orange500.copy(alpha = 0.1f),
+                            color = if (isLive) Green500.copy(alpha = 0.12f) else Orange500.copy(alpha = 0.1f),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Row(
                                 modifier = Modifier.padding(10.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(Icons.Default.TrendingUp, null, tint = Orange500, modifier = Modifier.size(16.dp))
+                                Icon(
+                                    if (isLive) Icons.Default.FitnessCenter else Icons.Default.TrendingUp,
+                                    null,
+                                    tint = if (isLive) Green500 else Orange500,
+                                    modifier = Modifier.size(16.dp)
+                                )
                                 Spacer(Modifier.width(8.dp))
-                                Text(hint, color = Orange500, fontSize = 12.sp)
+                                Text(
+                                    displayText,
+                                    color = if (isLive) Green500 else Orange500,
+                                    fontSize = 12.sp
+                                )
                             }
                         }
                         Spacer(Modifier.height(8.dp))
@@ -485,6 +500,7 @@ private fun TemplateExerciseCard(
     isDone: Boolean,
     progressionHint: String?,
     warmupHint: String? = null,
+    liveCoachFeedback: String? = null,
     onSelectForAdd: () -> Unit,
     onDeleteSet: (Long) -> Unit,
     onEditSet: (setId: Long, weight: Float, reps: Int) -> Unit,
@@ -585,7 +601,24 @@ private fun TemplateExerciseCard(
                 }
             }
 
-            if (progressionHint != null) {
+            if (liveCoachFeedback != null) {
+                // Live feedback takes priority when available
+                Spacer(Modifier.height(4.dp))
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = Green500.copy(alpha = 0.12f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.FitnessCenter, null, tint = Green500, modifier = Modifier.size(14.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text(liveCoachFeedback, color = Green500, fontSize = 11.sp)
+                    }
+                }
+            } else if (progressionHint != null) {
                 Spacer(Modifier.height(4.dp))
                 Surface(
                     shape = RoundedCornerShape(6.dp),

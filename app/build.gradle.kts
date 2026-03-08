@@ -12,8 +12,8 @@ android {
         applicationId = "com.lad.muscletracker"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 5
+        versionName = "5.0"
     }
 
     buildTypes {

@@ -81,6 +81,10 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
     private val _warmupHints = MutableStateFlow<Map<Long, String>>(emptyMap())
     val warmupHints: StateFlow<Map<Long, String>> = _warmupHints
 
+    // Live coach feedback per exercise (updates after each set)
+    private val _liveCoachFeedback = MutableStateFlow<Map<Long, String>>(emptyMap())
+    val liveCoachFeedback: StateFlow<Map<Long, String>> = _liveCoachFeedback
+
     // Data flows
     val allExercises = repository.getAllExercises().stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList()
@@ -452,7 +456,8 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
             _currentWorkoutId.value = workoutId
             _isEditingWorkout.value = true
             _currentTemplateId.value = workout.templateId
-            _workoutStartTime.value = workout.date
+            // Resume chrono from original duration so it continues where it stopped
+            _workoutStartTime.value = System.currentTimeMillis() - (workout.durationSeconds * 1000L)
             startElapsedTimer()
             workout.templateId?.let { loadProgressionHints(it) }
         }
@@ -462,7 +467,7 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch {
             val id = _currentWorkoutId.value ?: return@launch
             val workout = repository.getWorkoutById(id) ?: return@launch
-            val duration = ((System.currentTimeMillis() - workout.date) / 1000).toInt()
+            val duration = ((System.currentTimeMillis() - _workoutStartTime.value) / 1000).toInt()
             repository.updateWorkout(workout.copy(durationSeconds = duration, isCompleted = true))
             _currentWorkoutId.value = null
             _currentTemplateId.value = null
@@ -470,6 +475,7 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
             _workoutStartTime.value = 0
             _progressionHints.value = emptyMap()
             _warmupHints.value = emptyMap()
+            _liveCoachFeedback.value = emptyMap()
             _injectedFavorites.value = emptyList()
             elapsedTimerJob?.cancel()
             _workoutElapsedSeconds.value = 0
@@ -493,7 +499,52 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
                     setType = setType
                 )
             )
+            // Live coach feedback after each working set
+            if (setType == "working") {
+                updateLiveCoachFeedback(exerciseId, weight, reps)
+            }
         }
+    }
+
+    private fun updateLiveCoachFeedback(exerciseId: Long, weight: Float, reps: Int) {
+        val exercise = allExercises.value.find { it.id == exerciseId } ?: return
+        val targetMin = exercise.targetRepsMin
+        val targetMax = exercise.targetRepsMax
+
+        val increment = when {
+            exercise.exerciseType == "isolation" && weight < 30f -> 1.25f
+            exercise.exerciseType == "isolation" -> 2.5f
+            weight < 20f -> 1.25f
+            else -> 2.5f
+        }
+
+        val feedback = when {
+            // Reps above ceiling → increase weight next set
+            reps >= targetMax + 1 -> {
+                val newWeight = roundWeight(weight + increment)
+                "\u2B06\uFE0F Monte a ${newWeight}kg pour la prochaine serie! Trop facile a $reps reps"
+            }
+            // Reps at ceiling → excellent, ready to increase
+            reps >= targetMax -> {
+                val newWeight = roundWeight(weight + increment)
+                "\u2705 Parfait! $reps reps atteint. Prochaine serie: essaie ${newWeight}kg x $targetMin reps"
+            }
+            // Good range, close to ceiling → keep pushing
+            reps >= targetMax - 1 -> {
+                "\uD83D\uDCAA Excellent! Continue a ${weight}kg, vise $targetMax reps pour monter"
+            }
+            // In range → solid, keep going
+            reps >= targetMin -> {
+                "\u2705 Bonne charge! ${weight}kg x ${reps + 1} reps prochaine serie"
+            }
+            // Below min → too heavy
+            else -> {
+                val lighterWeight = roundWeight(weight - increment)
+                "\u26A0\uFE0F Trop lourd. Reduis a ${lighterWeight}kg pour tenir $targetMin reps min"
+            }
+        }
+
+        _liveCoachFeedback.value = _liveCoachFeedback.value + (exerciseId to feedback)
     }
 
     fun deleteSet(setId: Long) {

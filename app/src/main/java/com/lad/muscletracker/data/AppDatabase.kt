@@ -20,7 +20,7 @@ import kotlinx.coroutines.launch
         Goal::class,
         UserProfile::class, WeightEntry::class, CardioSession::class
     ],
-    version = 8,
+    version = 10,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -468,6 +468,39 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    INSERT OR IGNORE INTO exercises (name, muscleGroup, targetSets, targetRepsMin, targetRepsMax, restSeconds, exerciseType, dayType)
+                    VALUES ('Iso Lateral High Row', 'Dos', 4, 6, 10, 120, 'compound', '')
+                """)
+            }
+        }
+
+        val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Hammer Strength plate-loaded machines
+                val exercises = listOf(
+                    "('Iso Lateral Low Row', 'Dos', 4, 6, 10, 120, 'compound', '')",
+                    "('Iso Lateral Wide Pulldown', 'Dos', 4, 6, 10, 120, 'compound', '')",
+                    "('Iso Lateral DY Row', 'Dos', 4, 6, 10, 120, 'compound', '')",
+                    "('Iso Lateral Bench Press', 'Pecs', 4, 6, 10, 120, 'compound', '')",
+                    "('Iso Lateral Incline Press', 'Pecs', 4, 6, 10, 120, 'compound', '')",
+                    "('Iso Lateral Shoulder Press', 'Epaules', 4, 6, 10, 120, 'compound', '')",
+                    // Matrix / Technogym selectorized machines
+                    "('Chest press machine', 'Pecs', 4, 6, 10, 120, 'compound', '')",
+                    "('Shoulder press machine', 'Epaules', 4, 6, 10, 120, 'compound', '')",
+                    "('Lateral raise machine', 'Epaules', 3, 10, 15, 75, 'isolation', '')",
+                    // Jambes
+                    "('V-Squat', 'Jambes', 4, 6, 10, 120, 'compound', '')",
+                    "('Belt squat', 'Jambes', 4, 6, 10, 120, 'compound', '')"
+                )
+                exercises.forEach { values ->
+                    db.execSQL("INSERT OR IGNORE INTO exercises (name, muscleGroup, targetSets, targetRepsMin, targetRepsMax, restSeconds, exerciseType, dayType) VALUES $values")
+                }
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 Room.databaseBuilder(
@@ -476,7 +509,7 @@ abstract class AppDatabase : RoomDatabase() {
                     "muscle_tracker_db"
                 )
                     .addCallback(DatabaseCallback())
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
                     .build()
                     .also { INSTANCE = it }
             }
